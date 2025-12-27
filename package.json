@@ -37,7 +37,7 @@
   },
   "homepage": "https://github.com/ForceCalendar/force-calendar-ui#readme",
   "dependencies": {
-    "@forcecalendar/core": "github:ForceCalendar/force-calendar-core"
+    "@forcecalendar/core": "^0.2.0"
   },
   "devDependencies": {
     "vite": "^5.0.0"
