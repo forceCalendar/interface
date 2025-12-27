@@ -1,0 +1,48 @@
+{
+  "name": "@forcecalendar/ui",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "UI components for Force Calendar - framework-agnostic calendar components",
+  "main": "dist/force-calendar-ui.js",
+  "module": "dist/force-calendar-ui.esm.js",
+  "unpkg": "dist/force-calendar-ui.min.js",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "echo \"No tests yet\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ForceCalendar/force-calendar-ui.git"
+  },
+  "keywords": [
+    "calendar",
+    "ui",
+    "web-components",
+    "salesforce",
+    "force",
+    "scheduler",
+    "datepicker",
+    "events"
+  ],
+  "author": "ForceCalendar",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ForceCalendar/force-calendar-ui/issues"
+  },
+  "homepage": "https://github.com/ForceCalendar/force-calendar-ui#readme",
+  "dependencies": {
+    "@forcecalendar/core": "^0.2.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  },
+  "peerDependencies": {
+    "@forcecalendar/core": "^0.2.0"
+  }
+}
