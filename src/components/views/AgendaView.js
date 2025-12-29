@@ -1,18 +1,275 @@
 /**
- * AgendaView - Placeholder for agenda/list view
- * TODO: Implement full agenda view
+ * AgendaView - Professional List/Agenda View
+ * 
+ * Displays a chronological list of events grouped by date.
  */
 
 import { BaseComponent } from '../../core/BaseComponent.js';
+import { DateUtils } from '../../utils/DateUtils.js';
+import { StyleUtils } from '../../utils/StyleUtils.js';
 
 export class AgendaView extends BaseComponent {
-    template() {
+    constructor() {
+        super();
+        this._stateManager = null;
+        this.viewData = null;
+    }
+
+    set stateManager(manager) {
+        this._stateManager = manager;
+        if (manager) {
+            // Unsubscribe from previous if exists
+            if (this.unsubscribe) this.unsubscribe();
+            this.unsubscribe = manager.subscribe(this.handleStateUpdate.bind(this));
+            this.loadViewData();
+        }
+    }
+
+    get stateManager() {
+        return this._stateManager;
+    }
+
+    mount() {
+        super.mount();
+        this.loadViewData();
+    }
+
+    handleStateUpdate(newState, oldState) {
+        const relevantKeys = ['currentDate', 'events', 'config'];
+        const hasRelevantChange = relevantKeys.some(key => newState[key] !== oldState?.[key]);
+
+        if (hasRelevantChange) {
+            this.loadViewData();
+        }
+    }
+
+    loadViewData() {
+        if (!this.stateManager) return;
+        const events = this.stateManager.getEvents() || [];
+        
+        // Group events by date
+        const grouped = this.groupEventsByDate(events);
+        this.viewData = grouped;
+        this.render();
+    }
+
+    groupEventsByDate(events) {
+        const groups = {};
+        
+        // Sort events by start time
+        const sortedEvents = [...events].sort((a, b) => new Date(a.start) - new Date(b.start));
+
+        sortedEvents.forEach(event => {
+            const dateKey = new Date(event.start).toDateString();
+            if (!groups[dateKey]) {
+                groups[dateKey] = {
+                    date: new Date(event.start),
+                    events: []
+                };
+            }
+            groups[dateKey].events.push(event);
+        });
+
+        // Convert to array and sort by date
+        return Object.values(groups).sort((a, b) => a.date - b.date);
+    }
+
+    getStyles() {
         return `
-            <div style="padding: var(--fc-spacing-2xl); text-align: center; color: var(--fc-text-secondary);">
-                <h3 style="margin-bottom: var(--fc-spacing-md); color: var(--fc-text-color);">Agenda View</h3>
-                <p>Agenda view implementation coming soon...</p>
+            :host {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+                background: var(--fc-background);
+                overflow-y: auto;
+            }
+
+            .agenda-view {
+                padding: var(--fc-spacing-xl);
+                max-width: 800px;
+                margin: 0 auto;
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            .agenda-empty {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 100px 20px;
+                color: var(--fc-text-light);
+                text-align: center;
+            }
+
+            .empty-icon {
+                width: 48px;
+                height: 48px;
+                margin-bottom: 16px;
+                opacity: 0.2;
+            }
+
+            .date-group {
+                margin-bottom: 32px;
+            }
+
+            .date-header {
+                display: flex;
+                align-items: baseline;
+                gap: 12px;
+                padding-bottom: 8px;
+                border-bottom: 1px solid var(--fc-border-color);
+                margin-bottom: 12px;
+                position: sticky;
+                top: 0;
+                background: var(--fc-background);
+                z-index: 5;
+            }
+
+            .day-name {
+                font-size: 14px;
+                font-weight: 700;
+                color: var(--fc-text-color);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+
+            .full-date {
+                font-size: 13px;
+                color: var(--fc-text-secondary);
+            }
+
+            .event-list {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .event-row {
+                display: grid;
+                grid-template-columns: 100px 1fr;
+                align-items: center;
+                padding: 8px 12px;
+                border-radius: var(--fc-border-radius);
+                cursor: pointer;
+                transition: background-color var(--fc-transition-fast);
+            }
+
+            .event-row:hover {
+                background: var(--fc-background-hover);
+            }
+
+            .event-time {
+                font-size: 12px;
+                font-weight: 500;
+                color: var(--fc-text-secondary);
+            }
+
+            .event-info {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .event-dot {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                flex-shrink: 0;
+            }
+
+            .event-title {
+                font-size: 14px;
+                font-weight: 500;
+                color: var(--fc-text-color);
+            }
+
+            .event-all-day {
+                font-size: 10px;
+                font-weight: 700;
+                color: var(--fc-text-light);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+        `;
+    }
+
+    template() {
+        if (!this.viewData || this.viewData.length === 0) {
+            return `
+                <div class="agenda-empty">
+                    <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    <h3>No upcoming events</h3>
+                    <p>When you create events, they will appear here in a list.</p>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="agenda-view">
+                ${this.viewData.map(group => this.renderDateGroup(group)).join('')}
             </div>
         `;
+    }
+
+    renderDateGroup(group) {
+        const isToday = DateUtils.isToday(group.date);
+        const dayName = isToday ? 'Today' : DateUtils.formatDate(group.date, 'dayShort').split(' ')[0];
+        const fullDate = DateUtils.formatDate(group.date, 'short');
+
+        return `
+            <div class="date-group">
+                <header class="date-header">
+                    <span class="day-name" style="${isToday ? 'color: var(--fc-danger-color);' : ''}">${dayName}</span>
+                    <span class="full-date">${fullDate}</span>
+                </header>
+                <div class="event-list">
+                    ${group.events.map(event => this.renderEventRow(event)).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    renderEventRow(event) {
+        const color = event.backgroundColor || 'var(--fc-primary-color)';
+        const timeStr = event.allDay ? 
+            '<span class="event-all-day">All Day</span>' : 
+            DateUtils.formatTime(new Date(event.start));
+
+        return `
+            <div class="event-row" data-event-id="${event.id}">
+                <div class="event-time">${timeStr}</div>
+                <div class="event-info">
+                    <div class="event-dot" style="background-color: ${color}"></div>
+                    <span class="event-title">${this.escapeHtml(event.title)}</span>
+                </div>
+            </div>
+        `;
+    }
+
+    afterRender() {
+        this.$$('.event-row').forEach(row => {
+            row.addEventListener('click', () => {
+                const eventId = row.dataset.eventId;
+                const event = this.stateManager.getEvents().find(e => e.id === eventId);
+                if (event) this.emit('event-click', { event });
+            });
+        });
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    unmount() {
+        if (this.unsubscribe) this.unsubscribe();
     }
 }
 
