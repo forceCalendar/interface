@@ -3,218 +3,845 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>forceCalendar Interface - Enterprise Calendar Components</title>
+    <meta name="description" content="forceCalendar Interface - The official interface layer for forceCalendar Core. Enterprise-grade calendar components built as Web Components.">
+    <title>forceCalendar Interface | Visual Layer for the Calendar Engine</title>
     <style>
+        :root {
+            --dark: #1a1a1a;
+            --darker: #0d0d0d;
+            --light: #ffffff;
+            --gray: #8a8a8a;
+            --accent: #e0e0e0;
+            --code-bg: #0a0a0a;
+            --border: #2a2a2a;
+            --warning: #fbbf24;
+            --success: #4ade80;
+            --error: #f87171;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-            background: #f8f9fa;
-            padding: 24px;
-        }
-
-        .header {
-            max-width: 1200px;
-            margin: 0 auto 32px;
-        }
-
-        h1 {
-            font-size: 32px;
-            font-weight: 400;
-            color: #202124;
-            margin-bottom: 8px;
-        }
-
-        .subtitle {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: var(--darker);
+            color: var(--light);
+            line-height: 1.6;
             font-size: 16px;
-            color: #5f6368;
-            margin-bottom: 24px;
+            overflow-x: hidden;
         }
 
-        .badge {
-            display: inline-block;
-            background: #e8f0fe;
-            color: #1a73e8;
-            padding: 4px 12px;
-            border-radius: 16px;
-            font-size: 12px;
-            font-weight: 500;
-            margin-right: 8px;
+        /* Header */
+        header {
+            background: rgba(13, 13, 13, 0.98);
+            border-bottom: 1px solid var(--border);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
         }
 
-        .demo-container {
+        nav {
             max-width: 1200px;
             margin: 0 auto;
-            background: #fff;
+            padding: 1.25rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 300;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: baseline;
+            gap: 0.75rem;
+        }
+
+        .logo em {
+            font-style: italic;
+            font-family: Georgia, serif;
+            font-weight: 300;
+            margin-right: 0.25rem;
+        }
+
+        .logo strong {
+            font-weight: 700;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        .logo-badge {
+            font-size: 0.75rem;
+            background: var(--border);
+            padding: 0.125rem 0.5rem;
+            border-radius: 3px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--gray);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--gray);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0.5rem 0.75rem;
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: var(--light);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-links a[title="View on GitHub"]:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .version-badge {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            padding: 0.25rem 0.75rem;
+            border-radius: 3px;
+            font-size: 0.75rem;
+            font-family: 'SF Mono', Monaco, 'Inconsolata', 'Fira Code', monospace;
+            color: var(--accent);
+        }
+
+        /* Hero Section */
+        .hero {
+            margin-top: 80px;
+            padding: 6rem 2rem 3rem;
+            background: linear-gradient(180deg, var(--dark) 0%, var(--darker) 100%);
+        }
+
+        .hero-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 200;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+            letter-spacing: -2px;
+            text-align: center;
+        }
+
+        .hero h1 em {
+            font-style: italic;
+            font-family: Georgia, serif;
+            font-weight: 300;
+        }
+
+        .hero h1 strong {
+            font-weight: 700;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        .hero-core {
+            font-size: 0.875rem;
+            text-align: center;
+            color: var(--gray);
+            margin-bottom: 1.5rem;
+            letter-spacing: 4px;
+            font-weight: 400;
+            text-transform: uppercase;
+            opacity: 0.8;
+        }
+
+        .hero-tagline {
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--gray);
+            margin-bottom: 1.5rem;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 0;
+            display: inline-block;
+            width: auto;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--accent);
+            margin-bottom: 2rem;
+            max-width: 900px;
+            line-height: 1.8;
+            margin-left: auto;
+            margin-right: auto;
+            text-align: center;
+        }
+
+        .core-badge {
+            display: inline-block;
+            font-size: 0.75em;
+            background: var(--border);
+            padding: 0.125rem 0.5rem;
+            border-radius: 3px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--gray);
+            margin-left: 0.5rem;
+            vertical-align: baseline;
+            font-weight: 400;
+        }
+
+        /* New Project Notice */
+        .new-notice {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 1.5rem;
+            margin: 2rem auto;
+            max-width: 800px;
+        }
+
+        .new-notice-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .new-badge {
+            background: var(--warning);
+            color: var(--dark);
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .new-notice p {
+            color: var(--gray);
+            font-size: 0.875rem;
+            line-height: 1.6;
+        }
+
+        /* Main Content */
+        .content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Demo Section */
+        .demo-section {
+            margin: 4rem 0;
+            padding: 0;
+            background: var(--dark);
             border-radius: 8px;
-            padding: 24px;
-            box-shadow: 0 1px 3px rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
+            overflow: hidden;
+            border: 1px solid var(--border);
         }
 
         .demo-header {
-            margin-bottom: 24px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid #dadce0;
+            padding: 2rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--code-bg);
         }
 
         .demo-title {
-            font-size: 18px;
-            font-weight: 500;
-            color: #202124;
-            margin-bottom: 8px;
+            font-size: 1.5rem;
+            font-weight: 400;
+            margin-bottom: 0.5rem;
         }
 
         .demo-description {
-            font-size: 14px;
-            color: #5f6368;
+            color: var(--gray);
+            font-size: 0.875rem;
         }
 
-        .calendar-wrapper {
+        .calendar-container {
             height: 600px;
+            background: #fff;
         }
 
-        .features {
-            margin-top: 32px;
+        /* Section Headers */
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            font-weight: 200;
+            letter-spacing: -1px;
+            margin-bottom: 1rem;
+        }
+
+        .section-header p {
+            font-size: 1.125rem;
+            color: var(--gray);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Architecture Section */
+        .architecture-section {
+            margin: 6rem 0;
+        }
+
+        .architecture-visual {
+            background: var(--dark);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 3rem;
+            margin: 3rem 0;
+        }
+
+        .arch-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .arch-layer {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            border-radius: 3px;
+            text-align: center;
+        }
+
+        .arch-layer-title {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .arch-layer-desc {
+            font-size: 0.875rem;
+            color: var(--gray);
+        }
+
+        /* Features Grid */
+        .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
         }
 
         .feature-card {
-            padding: 16px;
-            background: #f8f9fa;
-            border-radius: 8px;
+            background: var(--dark);
+            border: 1px solid var(--border);
+            padding: 2rem;
+            border-radius: 3px;
         }
 
-        .feature-title {
-            font-size: 14px;
-            font-weight: 500;
-            color: #202124;
-            margin-bottom: 8px;
+        .feature-card h3 {
+            font-size: 1.25rem;
+            font-weight: 400;
+            margin-bottom: 1rem;
         }
 
-        .feature-desc {
-            font-size: 12px;
-            color: #5f6368;
+        .feature-card p {
+            font-size: 0.875rem;
+            color: var(--gray);
+            line-height: 1.6;
+        }
+
+        /* Code Examples */
+        .code-section {
+            margin: 4rem 0;
         }
 
         .code-block {
-            margin-top: 32px;
-            padding: 16px;
-            background: #202124;
-            color: #e8eaed;
-            border-radius: 8px;
-            font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 14px;
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
             overflow-x: auto;
         }
 
-        .code-comment {
-            color: #9aa0a6;
+        .code-block pre {
+            font-family: 'SF Mono', Monaco, 'Inconsolata', 'Fira Code', monospace;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            color: var(--accent);
         }
 
-        .code-string {
-            color: #8ab4f8;
+        /* Install Section */
+        .install-section {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 1.5rem;
+            margin: 2rem auto;
+            max-width: 600px;
         }
 
-        .code-keyword {
-            color: #ff8a65;
+        .install-command {
+            font-family: 'SF Mono', Monaco, 'Inconsolata', 'Fira Code', monospace;
+            font-size: 1rem;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .copy-btn {
+            background: var(--border);
+            border: none;
+            color: var(--gray);
+            padding: 0.5rem 1rem;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s;
+        }
+
+        .copy-btn:hover {
+            background: var(--light);
+            color: var(--dark);
+        }
+
+        /* CTA Section */
+        .cta-section {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: var(--dark);
+            border-radius: 3px;
+            margin: 4rem 0;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 0.875rem 2rem;
+            text-decoration: none;
+            border-radius: 3px;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background: var(--light);
+            color: var(--dark);
+            border: 1px solid var(--light);
+        }
+
+        .btn-primary:hover {
+            background: transparent;
+            color: var(--light);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--light);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--light);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 3rem 2rem;
+            margin-top: 6rem;
+            border-top: 1px solid var(--border);
+        }
+
+        footer p {
+            color: var(--gray);
+            font-size: 0.875rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-links {
+                display: none;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>forceCalendar Interface</h1>
-        <p class="subtitle">The official interface layer for @forcecalendar/core</p>
-        <div>
-            <span class="badge">Web Components</span>
-            <span class="badge">Enterprise Clean</span>
-            <span class="badge">Zero Dependencies</span>
-            <span class="badge">Powered by NPM Package</span>
-        </div>
-    </div>
+    <header>
+        <nav>
+            <div class="logo">
+                <span><em>force</em><strong>Calendar</strong></span>
+                <span class="logo-badge">Interface</span>
+            </div>
+            <div class="nav-links">
+                <a href="#demo">Demo</a>
+                <a href="#features">Features</a>
+                <a href="#usage">Usage</a>
+                <a href="https://core.forcecalendar.org" target="_blank" rel="noopener noreferrer">Core Docs</a>
+                <a href="https://github.com/ForceCalendar/force-calendar-interface" title="View on GitHub" target="_blank" rel="noopener noreferrer">
+                    <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: middle;">
+                        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                    </svg>
+                </a>
+                <span class="version-badge" id="version">v0.1.0</span>
+            </div>
+        </nav>
+    </header>
 
-    <div class="demo-container">
-        <div class="demo-header">
-            <h2 class="demo-title">Calendar View Component</h2>
-            <p class="demo-description">
-                A full-featured calendar with month, week, day, and agenda views.
-                Built with Web Components and powered by the @forcecalendar/core npm package.
+    <section class="hero">
+        <div class="hero-content">
+            <h1><em>force</em><strong>Calendar</strong></h1>
+            <div class="hero-core">INTERFACE LAYER</div>
+            <div style="text-align: center;">
+                <div class="hero-tagline">Web Components for Enterprise Calendars</div>
+            </div>
+            <p class="hero-subtitle">
+                <strong>The official visual layer for forceCalendar Core.</strong><br>
+                Beautiful, accessible, enterprise-grade calendar components built as Web Components.
+                Framework-agnostic. Works with React, Vue, Angular, or vanilla JavaScript.
+                Powered by the @forcecalendar/core engine.
             </p>
-        </div>
 
-        <div class="calendar-wrapper">
-            <force-calendar-view></force-calendar-view>
-        </div>
-
-        <div class="features">
-            <div class="feature-card">
-                <div class="feature-title">📦 NPM Package Integration</div>
-                <div class="feature-desc">
-                    Uses @forcecalendar/core from npm for all calendar logic - dates, timezones, recurrence, and event management.
+            <div class="new-notice">
+                <div class="new-notice-header">
+                    <span class="new-badge">Early Stage</span>
+                    <span style="color: var(--accent); font-size: 0.875rem;">Actively Developing • Built in 2025</span>
                 </div>
-            </div>
-            <div class="feature-card">
-                <div class="feature-title">🎯 Multiple Views</div>
-                <div class="feature-desc">
-                    Switch seamlessly between Month, Week, Day, and Agenda views with smooth transitions.
-                </div>
-            </div>
-            <div class="feature-card">
-                <div class="feature-title">🌐 Web Components</div>
-                <div class="feature-desc">
-                    Framework-agnostic components that work everywhere - React, Vue, Angular, or vanilla JS.
-                </div>
-            </div>
-            <div class="feature-card">
-                <div class="feature-title">🏢 Enterprise Ready</div>
-                <div class="feature-desc">
-                    Clean, professional design optimized for data density and clarity. Perfect for business applications.
-                </div>
-            </div>
-            <div class="feature-card">
-                <div class="feature-title">⚡ High Performance</div>
-                <div class="feature-desc">
-                    Leverages the Core engine's spatial indexing for instant rendering even with thousands of events.
-                </div>
-            </div>
-            <div class="feature-card">
-                <div class="feature-title">🔒 Salesforce Compatible</div>
-                <div class="feature-desc">
-                    Works in Salesforce LWC and other sandboxed environments thanks to zero DOM dependency architecture.
-                </div>
+                <p>
+                    This is the official interface layer for forceCalendar Core. While the Core engine handles all
+                    calendar computations, this Interface provides the visual components. Built as Web Components
+                    for maximum compatibility across frameworks and platforms.
+                </p>
             </div>
         </div>
+    </section>
 
-        <div class="code-block">
-            <span class="code-comment">// Install the packages</span><br>
-            npm install @forcecalendar/core @forcecalendar/interface<br><br>
+    <div class="content">
+        <!-- Live Demo -->
+        <section class="demo-section" id="demo">
+            <div class="demo-header">
+                <h2 class="demo-title">Live Calendar Demo</h2>
+                <p class="demo-description">
+                    A fully functional calendar powered by @forcecalendar/core. Try switching views, navigating dates,
+                    and experiencing the performance.
+                </p>
+            </div>
+            <div class="calendar-container">
+                <force-calendar-view></force-calendar-view>
+            </div>
+        </section>
 
-            <span class="code-comment">// Import and use in your application</span><br>
-            <span class="code-keyword">import</span> { CalendarView } <span class="code-keyword">from</span> <span class="code-string">'@forcecalendar/interface'</span>;<br><br>
+        <!-- Architecture -->
+        <section class="architecture-section">
+            <div class="section-header">
+                <h2>How It Works</h2>
+                <p>Clean separation between computation and presentation</p>
+            </div>
 
-            <span class="code-comment">// Just add the component to your HTML</span><br>
-            &lt;force-calendar-view&gt;&lt;/force-calendar-view&gt;<br><br>
+            <div class="architecture-visual">
+                <div class="arch-stack">
+                    <div class="arch-layer">
+                        <div class="arch-layer-title">Your Application</div>
+                        <div class="arch-layer-desc">React, Vue, Angular, Vanilla JS, Salesforce LWC</div>
+                    </div>
+                    <div class="arch-layer" style="border: 2px solid var(--accent);">
+                        <div class="arch-layer-title">forceCalendar <span class="core-badge" style="font-size: 0.75rem;">Interface</span></div>
+                        <div class="arch-layer-desc">Web Components for calendar UI</div>
+                    </div>
+                    <div class="arch-layer">
+                        <div class="arch-layer-title">forceCalendar <span class="core-badge" style="font-size: 0.75rem;">Core</span></div>
+                        <div class="arch-layer-desc">Calendar engine from NPM (@forcecalendar/core)</div>
+                    </div>
+                    <div class="arch-layer">
+                        <div class="arch-layer-title">Your Data</div>
+                        <div class="arch-layer-desc">Database, API, Local Storage</div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-            <span class="code-comment">// Or create programmatically</span><br>
-            <span class="code-keyword">const</span> calendar = <span class="code-keyword">new</span> CalendarView();<br>
-            calendar.addEvent({<br>
-            &nbsp;&nbsp;title: <span class="code-string">'Team Meeting'</span>,<br>
-            &nbsp;&nbsp;start: <span class="code-keyword">new</span> Date(<span class="code-string">'2025-01-15T10:00:00'</span>),<br>
-            &nbsp;&nbsp;end: <span class="code-keyword">new</span> Date(<span class="code-string">'2025-01-15T11:00:00'</span>)<br>
-            });
-        </div>
+        <!-- Features -->
+        <section id="features">
+            <div class="section-header">
+                <h2>Interface Features</h2>
+                <p>Enterprise-grade components with modern capabilities</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h3>Web Components</h3>
+                    <p>
+                        Built with standard Web Components. Works with any framework or vanilla JavaScript.
+                        Shadow DOM isolation prevents style conflicts.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <h3>Multiple Views</h3>
+                    <p>
+                        Month, Week, Day, and Agenda views. Smooth transitions and consistent navigation.
+                        Each view optimized for its purpose.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <h3>Powered by Core</h3>
+                    <p>
+                        Uses @forcecalendar/core for all calendar logic. Spatial indexing ensures instant
+                        rendering even with thousands of events.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <h3>Enterprise Design</h3>
+                    <p>
+                        Clean, professional interface optimized for business use. High data density
+                        without sacrificing clarity.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <h3>Accessibility</h3>
+                    <p>
+                        ARIA compliant. Keyboard navigation. Screen reader support.
+                        Built for everyone to use.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <h3>Customizable</h3>
+                    <p>
+                        CSS custom properties for theming. Event system for integration.
+                        Extend or modify as needed.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Usage -->
+        <section class="code-section" id="usage">
+            <div class="section-header">
+                <h2>Quick Start</h2>
+                <p>Get up and running in minutes</p>
+            </div>
+
+            <div class="install-section">
+                <div class="install-command">
+                    <span>npm install @forcecalendar/core @forcecalendar/interface</span>
+                    <button class="copy-btn" onclick="copyToClipboard()">Copy</button>
+                </div>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem;">HTML</h3>
+            <div class="code-block">
+                <pre>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;script type="module"&gt;
+        import '@forcecalendar/interface';
+    &lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;force-calendar-view&gt;&lt;/force-calendar-view&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem;">React</h3>
+            <div class="code-block">
+                <pre>import '@forcecalendar/interface';
+
+function CalendarApp() {
+    return (
+        &lt;div&gt;
+            &lt;force-calendar-view&gt;&lt;/force-calendar-view&gt;
+        &lt;/div&gt;
+    );
+}</pre>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem;">Vue</h3>
+            <div class="code-block">
+                <pre>&lt;template&gt;
+    &lt;force-calendar-view&gt;&lt;/force-calendar-view&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+import '@forcecalendar/interface';
+
+export default {
+    name: 'CalendarApp'
+}
+&lt;/script&gt;</pre>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem;">JavaScript API</h3>
+            <div class="code-block">
+                <pre>const calendar = document.querySelector('force-calendar-view');
+
+// Add an event
+calendar.addEvent({
+    title: 'Team Meeting',
+    start: new Date('2025-01-15T10:00:00'),
+    end: new Date('2025-01-15T11:00:00')
+});
+
+// Change view
+calendar.setView('week');
+
+// Navigate to date
+calendar.goToDate(new Date());</pre>
+            </div>
+        </section>
+
+        <!-- Why Web Components -->
+        <section style="margin: 6rem 0;">
+            <div class="section-header">
+                <h2>Why Web Components?</h2>
+                <p>The right technology for enterprise calendar interfaces</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem; margin-top: 3rem;">
+                <div>
+                    <h3 style="margin-bottom: 1rem;">Framework Agnostic</h3>
+                    <p style="color: var(--gray); line-height: 1.8;">
+                        Works with React, Vue, Angular, or vanilla JavaScript. No need to maintain
+                        separate components for each framework. One component, everywhere.
+                    </p>
+                </div>
+                <div>
+                    <h3 style="margin-bottom: 1rem;">Enterprise Compatible</h3>
+                    <p style="color: var(--gray); line-height: 1.8;">
+                        Works in Salesforce Lightning Web Components. Compatible with SharePoint.
+                        No conflicts with existing enterprise systems.
+                    </p>
+                </div>
+                <div>
+                    <h3 style="margin-bottom: 1rem;">Future Proof</h3>
+                    <p style="color: var(--gray); line-height: 1.8;">
+                        Web standards, not framework trends. Your calendar components will work
+                        for years without rewrites.
+                    </p>
+                </div>
+                <div>
+                    <h3 style="margin-bottom: 1rem;">True Encapsulation</h3>
+                    <p style="color: var(--gray); line-height: 1.8;">
+                        Shadow DOM provides real style isolation. No CSS conflicts. No global
+                        namespace pollution. Clean and contained.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta-section">
+            <h2 style="font-size: 2rem; font-weight: 200; margin-bottom: 1rem;">
+                Ready to Build Better Calendars?
+            </h2>
+            <p style="font-size: 1.125rem; color: var(--gray); margin-bottom: 2rem;">
+                Combine the power of forceCalendar Core with beautiful Interface components.
+                Built for enterprise. Ready for production.
+            </p>
+
+            <div class="cta-buttons">
+                <a href="https://github.com/ForceCalendar/force-calendar-interface" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
+                    View on GitHub
+                </a>
+                <a href="https://core.forcecalendar.org" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">
+                    Core Documentation
+                </a>
+                <a href="https://www.npmjs.com/package/@forcecalendar/interface" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">
+                    NPM Package
+                </a>
+            </div>
+        </section>
     </div>
+
+    <footer>
+        <div style="margin-bottom: 1rem;">
+            <span style="font-size: 1.125rem; font-weight: 200;"><em style="font-style: italic; font-family: Georgia, serif;">force</em><strong style="font-weight: 700;">Calendar</strong></span>
+            <span class="core-badge" style="font-size: 0.75rem; margin-left: 0.5rem;">Interface</span>
+        </div>
+        <p style="color: var(--gray); font-size: 0.875rem; margin-bottom: 1.5rem;">
+            Built in 2025 for enterprise calendar interfaces
+        </p>
+        <div style="display: flex; gap: 2rem; justify-content: center; align-items: center;">
+            <a href="https://github.com/ForceCalendar/force-calendar-interface" target="_blank" rel="noopener noreferrer" style="color: var(--gray); text-decoration: none;">
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                </svg>
+            </a>
+            <span style="color: var(--border);">•</span>
+            <a href="https://www.npmjs.com/package/@forcecalendar/interface" target="_blank" rel="noopener noreferrer" style="color: var(--gray); text-decoration: none; font-size: 0.875rem;">
+                npm: @forcecalendar/interface
+            </a>
+            <span style="color: var(--border);">•</span>
+            <a href="https://core.forcecalendar.org" target="_blank" rel="noopener noreferrer" style="color: var(--gray); text-decoration: none; font-size: 0.875rem;">
+                Core Engine
+            </a>
+        </div>
+    </footer>
 
     <script type="module">
         // Import the calendar component
         import '../src/components/CalendarView.js';
 
-        // The component is now automatically available as <force-calendar-view>
+        // Copy to clipboard
+        function copyToClipboard() {
+            const command = 'npm install @forcecalendar/core @forcecalendar/interface';
+            navigator.clipboard.writeText(command).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            });
+        }
+
+        // Make it global
+        window.copyToClipboard = copyToClipboard;
+
         console.log('forceCalendar Interface loaded successfully');
     </script>
 </body>
