@@ -12,7 +12,7 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "echo 'No build needed - static site'",
     "preview": "vite preview",
     "test": "echo \"No tests yet\""
   },
