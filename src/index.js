@@ -23,7 +23,6 @@ export { ForceCalendar } from './components/ForceCalendar.js';
 export { MonthView } from './components/views/MonthView.js';
 export { WeekView } from './components/views/WeekView.js';
 export { DayView } from './components/views/DayView.js';
-export { AgendaView } from './components/views/AgendaView.js';
 
 // Auto-register main component if in browser environment
 if (typeof window !== 'undefined' && typeof customElements !== 'undefined') {

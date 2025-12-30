@@ -14,7 +14,6 @@ import { DateUtils } from '../utils/DateUtils.js';
 import { MonthView } from './views/MonthView.js';
 import { WeekView } from './views/WeekView.js';
 import { DayView } from './views/DayView.js';
-import { AgendaView } from './views/AgendaView.js';
 import { EventForm } from './EventForm.js'; // Import EventForm
 
 // Register view components
@@ -26,9 +25,6 @@ if (!customElements.get('force-calendar-week')) {
 }
 if (!customElements.get('force-calendar-day')) {
     customElements.define('force-calendar-day', DayView);
-}
-if (!customElements.get('force-calendar-agenda')) {
-    customElements.define('force-calendar-agenda', AgendaView);
 }
 // EventForm is self-registering in its file
 
@@ -90,7 +86,7 @@ export class ForceCalendar extends BaseComponent {
         if (newState.view !== oldState?.view) {
             this.currentView = newState.view;
         }
-        
+
         // Re-render to update header title, active buttons, and child view
         this.render();
     }
@@ -261,14 +257,28 @@ export class ForceCalendar extends BaseComponent {
 
             .fc-body {
                 flex: 1;
-                overflow: hidden;
                 position: relative;
                 background: var(--fc-background);
+                min-height: 0;
+                display: flex;
+                flex-direction: column;
             }
 
             .fc-view-container {
-                height: 100%;
+                flex: 1;
                 position: relative;
+                min-height: 0;
+                display: flex;
+                flex-direction: column;
+            }
+
+            /* Ensure view components have proper dimensions */
+            force-calendar-month,
+            force-calendar-week,
+            force-calendar-day {
+                display: block;
+                width: 100%;
+                height: 100%;
             }
 
             /* Loading state */
@@ -388,8 +398,6 @@ export class ForceCalendar extends BaseComponent {
                                     data-view="week">Week</button>
                             <button class="fc-view-button ${view === 'day' ? 'active' : ''}"
                                     data-view="day">Day</button>
-                            <button class="fc-view-button ${view === 'agenda' ? 'active' : ''}"
-                                    data-view="agenda">List</button>
                         </div>
                     </div>
                 </header>
@@ -503,8 +511,6 @@ export class ForceCalendar extends BaseComponent {
                 return DateUtils.formatDateRange(weekStart, weekEnd, locale);
             case 'day':
                 return DateUtils.formatDate(date, 'long', locale);
-            case 'agenda':
-                return 'Agenda';
             default:
                 return DateUtils.formatDate(date, 'month', locale);
         }

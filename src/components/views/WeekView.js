@@ -75,7 +75,6 @@ export class WeekView extends BaseComponent {
                 display: flex;
                 flex-direction: column;
                 height: 100%;
-                overflow: hidden;
                 min-height: 0; /* Allow shrinking */
             }
 
@@ -84,8 +83,8 @@ export class WeekView extends BaseComponent {
                 flex-direction: column;
                 flex: 1;
                 background: var(--fc-background);
-                overflow: hidden;
                 min-height: 0;
+                height: 100%;
             }
 
             /* Header Section */

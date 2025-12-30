@@ -9,7 +9,7 @@ forceCalendar UI provides enterprise-grade calendar components built as Web Comp
 ## Features
 
 - **Powered by NPM Package** - Uses @forcecalendar/core for all calendar logic
-- **Multiple Views** - Month, Week, Day, and Agenda views
+- **Multiple Views** - Month, Week, and Day views
 - **Web Components** - Works with React, Vue, Angular, or vanilla JS
 - **Enterprise Design** - Clean, professional, optimized for business use
 - **High Performance** - Leverages spatial indexing for instant rendering

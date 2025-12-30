@@ -94,7 +94,6 @@ export class DayView extends BaseComponent {
                 display: flex;
                 flex-direction: column;
                 height: 100%;
-                overflow: hidden;
                 min-height: 0;
             }
 
@@ -103,8 +102,8 @@ export class DayView extends BaseComponent {
                 flex-direction: column;
                 flex: 1;
                 background: var(--fc-background);
-                overflow: hidden;
                 min-height: 0;
+                height: 100%;
             }
 
             /* Header Section */

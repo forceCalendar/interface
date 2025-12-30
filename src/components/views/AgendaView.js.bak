@@ -12,7 +12,7 @@ export class AgendaView extends BaseComponent {
     constructor() {
         super();
         this._stateManager = null;
-        this.viewData = null;
+        this.viewData = [];
     }
 
     set stateManager(manager) {
@@ -46,7 +46,7 @@ export class AgendaView extends BaseComponent {
     loadViewData() {
         if (!this.stateManager) return;
         const events = this.stateManager.getEvents() || [];
-        
+
         // Group events by date
         const grouped = this.groupEventsByDate(events);
         this.viewData = grouped;
