@@ -81,10 +81,10 @@ export class WeekView extends BaseComponent {
             .week-view {
                 display: flex;
                 flex-direction: column;
-                flex: 1;
+                height: 100%;
                 background: var(--fc-background);
                 min-height: 0;
-                height: 100%;
+                overflow: hidden; /* Prevent outer overflow */
             }
 
             /* Header Section */
@@ -161,7 +161,8 @@ export class WeekView extends BaseComponent {
             /* Scrollable Body */
             .week-body {
                 flex: 1;
-                overflow-y: scroll; /* Force scroll behavior */
+                overflow-y: auto; /* Changed to auto for better scroll detection */
+                overflow-x: hidden;
                 position: relative;
                 display: grid;
                 grid-template-columns: 60px repeat(7, 1fr);
@@ -169,6 +170,7 @@ export class WeekView extends BaseComponent {
                 scroll-behavior: smooth;
                 -webkit-overflow-scrolling: touch;
                 min-height: 0;
+                max-height: 100%; /* Ensure it doesn't exceed parent */
             }
 
             .time-gutter {

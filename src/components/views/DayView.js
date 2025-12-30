@@ -100,10 +100,10 @@ export class DayView extends BaseComponent {
             .day-view {
                 display: flex;
                 flex-direction: column;
-                flex: 1;
+                height: 100%;
                 background: var(--fc-background);
                 min-height: 0;
-                height: 100%;
+                overflow: hidden; /* Prevent outer overflow */
             }
 
             /* Header Section */
@@ -183,7 +183,8 @@ export class DayView extends BaseComponent {
             /* Scrollable Body */
             .day-body {
                 flex: 1;
-                overflow-y: scroll;
+                overflow-y: auto; /* Changed to auto for better scroll detection */
+                overflow-x: hidden;
                 position: relative;
                 display: grid;
                 grid-template-columns: 60px 1fr;
@@ -191,6 +192,7 @@ export class DayView extends BaseComponent {
                 scroll-behavior: smooth;
                 -webkit-overflow-scrolling: touch;
                 min-height: 0;
+                max-height: 100%; /* Ensure it doesn't exceed parent */
             }
 
             .time-gutter {
