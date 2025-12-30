@@ -201,10 +201,28 @@ class StateManager {
                 days: week.days.map(day => ({
                     ...day,
                     // Core already provides isToday and isWeekend
-                    isSelected: this.isSelectedDate(new Date(day.date))
+                    isSelected: this.isSelectedDate(new Date(day.date)),
+                    // Ensure events are included
+                    events: day.events || this.getEventsForDate(new Date(day.date))
                 }))
             }));
         }
+
+        // Handle day view specifically
+        if (viewData.days) {
+            viewData.days = viewData.days.map(day => ({
+                ...day,
+                isSelected: this.isSelectedDate(new Date(day.date)),
+                // Ensure events are included
+                events: day.events || this.getEventsForDate(new Date(day.date))
+            }));
+        }
+
+        // Handle single day structure (for day view)
+        if (viewData.date && !viewData.days && !viewData.weeks) {
+            viewData.events = viewData.events || this.getEventsForDate(new Date(viewData.date));
+        }
+
         return viewData;
     }
 
