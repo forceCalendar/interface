@@ -7,6 +7,7 @@
 import { BaseComponent } from '../../core/BaseComponent.js';
 import { DateUtils } from '../../utils/DateUtils.js';
 import { StyleUtils } from '../../utils/StyleUtils.js';
+import { DOMUtils } from '../../utils/DOMUtils.js';
 
 export class DayView extends BaseComponent {
     constructor() {
@@ -29,11 +30,31 @@ export class DayView extends BaseComponent {
     }
 
     handleStateUpdate(newState, oldState) {
-        const relevantKeys = ['currentDate', 'events', 'selectedDate', 'config'];
-        const hasRelevantChange = relevantKeys.some(key => newState[key] !== oldState?.[key]);
-
-        if (hasRelevantChange) {
+        // Granular updates
+        if (newState.currentDate !== oldState.currentDate || newState.view !== oldState.view) {
             this.loadViewData();
+            return;
+        }
+
+        if (newState.events !== oldState.events) {
+            this.loadViewData(); // Simple reload for now
+        }
+
+        if (newState.selectedDate !== oldState.selectedDate) {
+            this.updateSelection(newState.selectedDate, oldState.selectedDate);
+        }
+    }
+
+    updateSelection(newDate, oldDate) {
+        const dayCol = this.shadowRoot.querySelector('.day-column');
+        if (!dayCol) return;
+
+        const isMatch = (date) => date && DateUtils.isSameDay(date, new Date(dayCol.dataset.date));
+        
+        if (isMatch(newDate)) {
+            dayCol.classList.add('selected');
+        } else {
+            dayCol.classList.remove('selected');
         }
     }
 
@@ -51,41 +72,30 @@ export class DayView extends BaseComponent {
         const currentState = this.stateManager?.getState();
         const currentDate = currentState?.currentDate || new Date();
 
-        // Strategy 1: Look for 'days' array (standard for day/week views)
         if (viewData.days && Array.isArray(viewData.days) && viewData.days.length > 0) {
-            // Try to find the day matching current selection, otherwise take first
             dayData = viewData.days.find(d => DateUtils.isSameDay(new Date(d.date), currentDate)) || viewData.days[0];
         } 
-        // Strategy 2: Look for 'weeks' array (common if core defaults to month shape)
         else if (viewData.weeks && Array.isArray(viewData.weeks) && viewData.weeks.length > 0) {
             const allDays = viewData.weeks.flatMap(w => w.days || []);
             dayData = allDays.find(d => DateUtils.isSameDay(new Date(d.date), currentDate)) || allDays[0];
         }
-        // Strategy 3: Check if viewData itself is the day object
         else if (viewData.date) {
             dayData = viewData;
         }
 
-        if (!dayData) {
-            console.warn('DayView: Could not extract day data from viewData', viewData);
-            return null;
-        }
+        if (!dayData) return null;
 
-        try {
-            return {
-                ...viewData,
-                day: {
-                    ...dayData,
-                    date: new Date(dayData.date),
-                    isToday: DateUtils.isToday(new Date(dayData.date)),
-                    timedEvents: (dayData.events || []).filter(e => !e.allDay),
-                    allDayEvents: (dayData.events || []).filter(e => e.allDay)
-                }
-            };
-        } catch (e) {
-            console.error('DayView: Error processing day data', e);
-            return null;
-        }
+        const dayDate = new Date(dayData.date);
+        return {
+            ...viewData,
+            day: {
+                ...dayData,
+                date: dayDate,
+                isToday: DateUtils.isToday(dayDate),
+                timedEvents: (dayData.events || []).filter(e => !e.allDay),
+                allDayEvents: (dayData.events || []).filter(e => e.allDay)
+            }
+        };
     }
 
     getStyles() {
@@ -103,10 +113,10 @@ export class DayView extends BaseComponent {
                 height: 100%;
                 background: var(--fc-background);
                 min-height: 0;
-                overflow: hidden; /* Prevent outer overflow */
+                overflow: hidden;
             }
 
-            /* Header Section */
+            /* Header */
             .day-header {
                 display: grid;
                 grid-template-columns: 60px 1fr;
@@ -114,10 +124,6 @@ export class DayView extends BaseComponent {
                 background: var(--fc-background);
                 z-index: 20;
                 flex-shrink: 0;
-            }
-
-            .time-gutter-header {
-                border-right: 1px solid var(--fc-border-color);
             }
 
             .day-column-header {
@@ -136,12 +142,6 @@ export class DayView extends BaseComponent {
                 letter-spacing: 0.1em;
             }
 
-            .day-number-wrapper {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-
             .day-number {
                 font-size: 24px;
                 font-weight: 600;
@@ -152,47 +152,15 @@ export class DayView extends BaseComponent {
                 color: var(--fc-danger-color);
             }
 
-            /* All Day Events */
-            .all-day-row {
-                display: grid;
-                grid-template-columns: 60px 1fr;
-                border-bottom: 1px solid var(--fc-border-color);
-                background: var(--fc-background-alt);
-                min-height: 36px;
-                flex-shrink: 0;
-            }
-
-            .all-day-label {
-                font-size: 9px;
-                color: var(--fc-text-light);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border-right: 1px solid var(--fc-border-color);
-                text-transform: uppercase;
-                font-weight: 700;
-            }
-
-            .all-day-cell {
-                padding: 6px 12px;
-                display: flex;
-                flex-wrap: wrap;
-                gap: 4px;
-            }
-
-            /* Scrollable Body */
+            /* Body */
             .day-body {
                 flex: 1;
-                overflow-y: auto; /* Changed to auto for better scroll detection */
+                overflow-y: auto;
                 overflow-x: hidden;
                 position: relative;
                 display: grid;
                 grid-template-columns: 60px 1fr;
                 background: var(--fc-background);
-                scroll-behavior: smooth;
-                -webkit-overflow-scrolling: touch;
-                min-height: 0;
-                max-height: 100%; /* Ensure it doesn't exceed parent */
             }
 
             .time-gutter {
@@ -215,35 +183,10 @@ export class DayView extends BaseComponent {
                 height: 1440px;
             }
 
-            /* Scrollbar styling */
-            .day-body::-webkit-scrollbar {
-                width: 8px;
-            }
-            .day-body::-webkit-scrollbar-track {
-                background: var(--fc-background-alt);
-            }
-            .day-body::-webkit-scrollbar-thumb {
-                background: var(--fc-border-color);
-                border-radius: 4px;
+            .day-column.selected {
+                background: var(--fc-background-hover);
             }
 
-            /* Grid Lines */
-            .grid-lines {
-                position: absolute;
-                top: 0;
-                left: 60px;
-                right: 0;
-                bottom: 0;
-                pointer-events: none;
-            }
-
-            .grid-line {
-                height: 60px;
-                border-bottom: 1px solid var(--fc-border-color);
-                width: 100%;
-            }
-
-            /* Event Style */
             .event-container {
                 position: absolute;
                 left: 12px;
@@ -265,20 +208,6 @@ export class DayView extends BaseComponent {
             .event-container:hover {
                 z-index: 10;
                 transform: translateX(4px);
-                filter: brightness(0.95);
-            }
-
-            .event-title {
-                display: block;
-                font-weight: 700;
-                margin-bottom: 4px;
-                font-size: 14px;
-            }
-
-            .event-time {
-                opacity: 0.9;
-                font-size: 11px;
-                font-weight: 600;
             }
 
             .now-indicator {
@@ -290,34 +219,17 @@ export class DayView extends BaseComponent {
                 z-index: 15;
                 pointer-events: none;
             }
-
-            .now-indicator::before {
-                content: '';
-                position: absolute;
-                left: -4px;
-                top: -3px;
-                width: 8px;
-                height: 8px;
-                background: var(--fc-danger-color);
-                border-radius: 50%;
-            }
         `;
     }
 
     template() {
         if (!this.viewData || !this.viewData.day) {
-            return '<div class="day-view" style="padding: 20px; color: var(--fc-text-light);">No data available for this day.</div>';
+            return '<div class="day-view" style="padding: 20px; color: var(--fc-text-light);">No data available.</div>';
         }
 
         const { day } = this.viewData;
         const locale = this.stateManager?.state?.config?.locale || 'en-US';
-        
-        let dayName = 'Day';
-        try {
-            dayName = DateUtils.formatDate(day.date, 'day', locale).split(' ')[0];
-        } catch (e) {
-            console.warn('DayView: Could not format day name', e);
-        }
+        const dayName = DateUtils.formatDate(day.date, 'day', locale).split(' ')[0];
 
         return `
             <div class="day-view">
@@ -325,24 +237,11 @@ export class DayView extends BaseComponent {
                     <div class="time-gutter-header"></div>
                     <div class="day-column-header ${day.isToday ? 'is-today' : ''}">
                         <span class="day-name">${dayName}</span>
-                        <div class="day-number-wrapper">
-                            <span class="day-number">${day.date.getDate()}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="all-day-row">
-                    <div class="all-day-label">All day</div>
-                    <div class="all-day-cell">
-                        ${(day.allDayEvents || []).map(e => this.renderAllDayEvent(e)).join('')}
+                        <span class="day-number">${day.date.getDate()}</span>
                     </div>
                 </div>
 
                 <div class="day-body" id="scroll-container">
-                    <div class="grid-lines">
-                        ${this.hours.map(() => `<div class="grid-line"></div>`).join('')}
-                    </div>
-
                     <div class="time-gutter">
                         ${this.hours.map(h => `
                             <div class="time-slot-label">
@@ -353,7 +252,7 @@ export class DayView extends BaseComponent {
 
                     <div class="day-column" data-date="${day.date.toISOString()}">
                         ${day.isToday ? this.renderNowIndicator() : ''}
-                        ${(day.timedEvents || []).map(e => this.renderTimedEvent(e)).join('')}
+                        ${day.timedEvents.map(e => this.renderTimedEvent(e)).join('')}
                     </div>
                 </div>
             </div>
@@ -377,21 +276,8 @@ export class DayView extends BaseComponent {
             <div class="event-container" 
                  style="top: ${top}px; height: ${height}px; background-color: ${color}; color: ${textColor};"
                  data-event-id="${event.id}">
+                <span class="event-title">${DOMUtils.escapeHTML(event.title)}</span>
                 <span class="event-time">${DateUtils.formatTime(start)} - ${DateUtils.formatTime(end)}</span>
-                <span class="event-title">${this.escapeHtml(event.title)}</span>
-            </div>
-        `;
-    }
-
-    renderAllDayEvent(event) {
-        const color = event.backgroundColor || 'var(--fc-primary-color)';
-        const textColor = StyleUtils.getContrastColor(color);
-        
-        return `
-            <div class="event-item" 
-                 style="background-color: ${color}; color: ${textColor}; font-size: 12px; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-weight: 500;"
-                 data-event-id="${event.id}">
-                ${this.escapeHtml(event.title)}
             </div>
         `;
     }
@@ -399,7 +285,7 @@ export class DayView extends BaseComponent {
     renderNowIndicator() {
         const now = new Date();
         const minutes = now.getHours() * 60 + now.getMinutes();
-        return `<div class="now-indicator" style="top: ${minutes}px"></div>`;
+        return \`<div class="now-indicator" style="top: \${minutes}px"></div>\`;
     }
 
     afterRender() {
@@ -424,21 +310,14 @@ export class DayView extends BaseComponent {
                 const container = this.$('#scroll-container');
                 const rect = dayCol.getBoundingClientRect();
                 const y = e.clientY - rect.top + (container ? container.scrollTop : 0);
-                const hours = Math.floor(y / 60);
-                const minutes = Math.floor(y % 60);
                 
                 const date = new Date(dayCol.dataset.date);
-                date.setHours(hours, minutes, 0, 0);
+                date.setHours(Math.floor(y / 60), Math.floor(y % 60), 0, 0);
                 
+                this.stateManager.selectDate(date);
                 this.emit('day-click', { date });
             });
         }
-    }
-
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
     }
 
     unmount() {

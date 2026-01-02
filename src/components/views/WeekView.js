@@ -7,6 +7,7 @@
 import { BaseComponent } from '../../core/BaseComponent.js';
 import { DateUtils } from '../../utils/DateUtils.js';
 import { StyleUtils } from '../../utils/StyleUtils.js';
+import { DOMUtils } from '../../utils/DOMUtils.js';
 
 export class WeekView extends BaseComponent {
     constructor() {
@@ -29,11 +30,30 @@ export class WeekView extends BaseComponent {
     }
 
     handleStateUpdate(newState, oldState) {
-        const relevantKeys = ['currentDate', 'events', 'selectedDate', 'config'];
-        const hasRelevantChange = relevantKeys.some(key => newState[key] !== oldState?.[key]);
-
-        if (hasRelevantChange) {
+        // Granular updates
+        if (newState.currentDate !== oldState.currentDate || newState.view !== oldState.view) {
             this.loadViewData();
+            return;
+        }
+
+        if (newState.events !== oldState.events) {
+            this.loadViewData(); // Simple reload for now
+        }
+
+        if (newState.selectedDate !== oldState.selectedDate) {
+            this.updateSelection(newState.selectedDate, oldState.selectedDate);
+        }
+    }
+
+    updateSelection(newDate, oldDate) {
+        // Selection in WeekView is often visual on the column
+        if (oldDate) {
+            const oldDayEl = this.shadowRoot.querySelector(`[data-date^="${oldDate.toISOString().split('T')[0]}"]`);
+            if (oldDayEl) oldDayEl.classList.remove('selected');
+        }
+        if (newDate) {
+            const newDayEl = this.shadowRoot.querySelector(`[data-date^="${newDate.toISOString().split('T')[0]}"]`);
+            if (newDayEl) newDayEl.classList.add('selected');
         }
     }
 
@@ -47,7 +67,6 @@ export class WeekView extends BaseComponent {
     processViewData(viewData) {
         if (!viewData) return null;
 
-        // Core can return data in 'weeks' (for month) or 'days' (for week/day)
         let days = [];
         if (viewData.weeks && viewData.weeks.length > 0) {
             days = viewData.weeks[0].days;
@@ -59,13 +78,16 @@ export class WeekView extends BaseComponent {
 
         return {
             ...viewData,
-            days: days.map(day => ({
-                ...day,
-                date: new Date(day.date),
-                isToday: DateUtils.isToday(new Date(day.date)),
-                timedEvents: (day.events || []).filter(e => !e.allDay),
-                allDayEvents: (day.events || []).filter(e => e.allDay)
-            }))
+            days: days.map(day => {
+                const dayDate = new Date(day.date);
+                return {
+                    ...day,
+                    date: dayDate,
+                    isToday: DateUtils.isToday(dayDate),
+                    timedEvents: (day.events || []).filter(e => !e.allDay),
+                    allDayEvents: (day.events || []).filter(e => e.allDay)
+                };
+            })
         };
     }
 
@@ -75,7 +97,7 @@ export class WeekView extends BaseComponent {
                 display: flex;
                 flex-direction: column;
                 height: 100%;
-                min-height: 0; /* Allow shrinking */
+                min-height: 0;
             }
 
             .week-view {
@@ -84,7 +106,7 @@ export class WeekView extends BaseComponent {
                 height: 100%;
                 background: var(--fc-background);
                 min-height: 0;
-                overflow: hidden; /* Prevent outer overflow */
+                overflow: hidden;
             }
 
             /* Header Section */
@@ -94,11 +116,7 @@ export class WeekView extends BaseComponent {
                 border-bottom: 1px solid var(--fc-border-color);
                 background: var(--fc-background);
                 z-index: 20;
-                flex-shrink: 0; /* Prevent header from shrinking */
-            }
-
-            .time-gutter-header {
-                border-right: 1px solid var(--fc-border-color);
+                flex-shrink: 0;
             }
 
             .day-column-header {
@@ -137,46 +155,21 @@ export class WeekView extends BaseComponent {
                 font-weight: 700;
             }
 
-            /* All Day Events Row */
-            .all-day-row {
-                display: grid;
-                grid-template-columns: 60px repeat(7, 1fr);
-                border-bottom: 1px solid var(--fc-border-color);
-                background: var(--fc-background-alt);
-                min-height: 32px;
-                flex-shrink: 0; /* Prevent all-day row from shrinking */
-            }
-
-            .all-day-label {
-                font-size: 9px;
-                color: var(--fc-text-light);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border-right: 1px solid var(--fc-border-color);
-                text-transform: uppercase;
-                font-weight: 700;
-            }
-
-            /* Scrollable Body */
+            /* Body Section */
             .week-body {
                 flex: 1;
-                overflow-y: auto; /* Changed to auto for better scroll detection */
+                overflow-y: auto;
                 overflow-x: hidden;
                 position: relative;
                 display: grid;
                 grid-template-columns: 60px repeat(7, 1fr);
                 background: var(--fc-background);
-                scroll-behavior: smooth;
-                -webkit-overflow-scrolling: touch;
-                min-height: 0;
-                max-height: 100%; /* Ensure it doesn't exceed parent */
             }
 
             .time-gutter {
                 border-right: 1px solid var(--fc-border-color);
                 background: var(--fc-background-alt);
-                height: 1440px; /* Force height matching day columns */
+                height: 1440px;
             }
 
             .time-slot-label {
@@ -191,45 +184,13 @@ export class WeekView extends BaseComponent {
             .day-column {
                 border-right: 1px solid var(--fc-border-color);
                 position: relative;
-                height: 1440px; /* 24 hours * 60px */
+                height: 1440px;
             }
 
-            /* Scrollbar styling */
-            .week-body::-webkit-scrollbar {
-                width: 8px;
-            }
-            .week-body::-webkit-scrollbar-track {
-                background: var(--fc-background-alt);
-            }
-            .week-body::-webkit-scrollbar-thumb {
-                background: var(--fc-border-color);
-                border-radius: 4px;
-            }
-            .week-body::-webkit-scrollbar-thumb:hover {
-                background: var(--fc-text-light);
+            .day-column.selected {
+                background: var(--fc-background-hover);
             }
 
-            /* Grid Lines Layer */
-            .grid-lines {
-                position: absolute;
-                top: 0;
-                left: 60px;
-                right: 0;
-                bottom: 0;
-                pointer-events: none;
-            }
-
-            .grid-line {
-                height: 60px;
-                border-bottom: 1px solid var(--fc-border-color);
-                width: 100%;
-            }
-            
-            .grid-line:last-child {
-                border-bottom: none;
-            }
-
-            /* Event Positioning */
             .event-container {
                 position: absolute;
                 left: 2px;
@@ -251,21 +212,8 @@ export class WeekView extends BaseComponent {
             .event-container:hover {
                 z-index: 10;
                 transform: scale(1.02);
-                filter: brightness(0.95);
             }
 
-            .event-title {
-                display: block;
-                font-weight: 700;
-                margin-bottom: 2px;
-            }
-
-            .event-time {
-                opacity: 0.9;
-                font-size: 10px;
-            }
-
-            /* Today indicator line */
             .now-indicator {
                 position: absolute;
                 left: 0;
@@ -274,17 +222,6 @@ export class WeekView extends BaseComponent {
                 background: var(--fc-danger-color);
                 z-index: 15;
                 pointer-events: none;
-            }
-
-            .now-indicator::before {
-                content: '';
-                position: absolute;
-                left: -4px;
-                top: -3px;
-                width: 8px;
-                height: 8px;
-                background: var(--fc-danger-color);
-                border-radius: 50%;
             }
         `;
     }
@@ -304,20 +241,7 @@ export class WeekView extends BaseComponent {
                     `).join('')}
                 </div>
 
-                <div class="all-day-row">
-                    <div class="all-day-label">All day</div>
-                    ${this.viewData.days.map(day => `
-                        <div class="all-day-cell">
-                            ${day.allDayEvents.map(e => this.renderAllDayEvent(e)).join('')}
-                        </div>
-                    `).join('')}
-                </div>
-
                 <div class="week-body" id="scroll-container">
-                    <div class="grid-lines">
-                        ${this.hours.map(() => `<div class="grid-line"></div>`).join('')}
-                    </div>
-
                     <div class="time-gutter">
                         ${this.hours.map(h => `
                             <div class="time-slot-label">
@@ -344,8 +268,8 @@ export class WeekView extends BaseComponent {
         const startMinutes = start.getHours() * 60 + start.getMinutes();
         const durationMinutes = (end - start) / (1000 * 60);
         
-        const top = startMinutes; // 1px per minute (60px per hour)
-        const height = Math.max(durationMinutes, 20); // Min height 20px
+        const top = startMinutes; 
+        const height = Math.max(durationMinutes, 20);
         
         const color = event.backgroundColor || 'var(--fc-primary-color)';
         const textColor = StyleUtils.getContrastColor(color);
@@ -354,21 +278,8 @@ export class WeekView extends BaseComponent {
             <div class="event-container" 
                  style="top: ${top}px; height: ${height}px; background-color: ${color}; color: ${textColor};"
                  data-event-id="${event.id}">
+                <span class="event-title">${DOMUtils.escapeHTML(event.title)}</span>
                 <span class="event-time">${DateUtils.formatTime(start)}</span>
-                <span class="event-title">${this.escapeHtml(event.title)}</span>
-            </div>
-        `;
-    }
-
-    renderAllDayEvent(event) {
-        const color = event.backgroundColor || 'var(--fc-primary-color)';
-        const textColor = StyleUtils.getContrastColor(color);
-        
-        return `
-            <div class="event-item" 
-                 style="background-color: ${color}; color: ${textColor}; font-size: 10px; padding: 2px 4px; border-radius: 2px; cursor: pointer;"
-                 data-event-id="${event.id}">
-                ${this.escapeHtml(event.title)}
             </div>
         `;
     }
@@ -376,18 +287,16 @@ export class WeekView extends BaseComponent {
     renderNowIndicator() {
         const now = new Date();
         const minutes = now.getHours() * 60 + now.getMinutes();
-        return `<div class="now-indicator" style="top: ${minutes}px"></div>`;
+        return \`<div class="now-indicator" style="top: \${minutes}px"></div>\`;
     }
 
     afterRender() {
         const container = this.$('#scroll-container');
         if (container && !this._scrolled) {
-            // Scroll to 8 AM by default
             container.scrollTop = 8 * 60 - 50;
             this._scrolled = true;
         }
 
-        // Event listeners
         this.$$('[data-event-id]').forEach(el => {
             el.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -402,22 +311,14 @@ export class WeekView extends BaseComponent {
                 const container = this.$('#scroll-container');
                 const rect = el.getBoundingClientRect();
                 const y = e.clientY - rect.top + (container ? container.scrollTop : 0);
-                const totalMinutes = y;
-                const hours = Math.floor(totalMinutes / 60);
-                const minutes = Math.floor(totalMinutes % 60);
                 
                 const date = new Date(el.dataset.date);
-                date.setHours(hours, minutes, 0, 0);
+                date.setHours(Math.floor(y / 60), Math.floor(y % 60), 0, 0);
                 
+                this.stateManager.selectDate(date);
                 this.emit('day-click', { date });
             });
         });
-    }
-
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
     }
 
     unmount() {

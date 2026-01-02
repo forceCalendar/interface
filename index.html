@@ -3,109 +3,339 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Force Calendar - Web Component Demo</title>
+    <title>Force Calendar | Enterprise Component Demo</title>
     <style>
+        :root {
+            --sidebar-width: 300px;
+            --header-height: 64px;
+            --primary-blue: #2563EB;
+            --bg-gray: #F8FAFC;
+            --border-color: #E2E8F0;
+        }
+
         body, html {
             margin: 0;
             padding: 0;
             height: 100vh;
             width: 100vw;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #f8fafc; /* Matches our new theme bg */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-gray);
+            color: #1E293B;
+            overflow: hidden;
         }
 
-        #app {
+        .dashboard {
+            display: flex;
+            flex-direction: column;
             height: 100vh;
-            width: 100vw;
-            padding: 20px;
-            box-sizing: border-box;
+        }
+
+        header {
+            height: var(--header-height);
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            justify-content: space-between;
+            z-index: 100;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--primary-blue);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .version-badge {
+            background: #EFF6FF;
+            color: var(--primary-blue);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-left: 8px;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background: white;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            gap: 32px;
+            overflow-y: auto;
+        }
+
+        .content {
+            flex: 1;
+            padding: 24px;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
         }
 
-        /* Make the calendar take full available space */
-        force-calendar {
+        .calendar-container {
             flex: 1;
-            /* We override the default height attribute to be flexible */
-            --calendar-height: 100% !important; 
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+        }
+
+        h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748B;
+            margin-bottom: 16px;
+        }
+
+        .control-group {
             display: flex;
             flex-direction: column;
+            gap: 12px;
+        }
+
+        .btn {
+            background: white;
+            border: 1px solid var(--border-color);
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn:hover {
+            background: #F1F5F9;
+            border-color: #CBD5E1;
+        }
+
+        .btn-primary {
+            background: var(--primary-blue);
+            color: white;
+            border-color: var(--primary-blue);
+        }
+
+        .btn-primary:hover {
+            background: #1D4ED8;
+            border-color: #1D4ED8;
+        }
+
+        .event-log {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 200px;
+        }
+
+        #log-entries {
+            flex: 1;
+            background: #0F172A;
+            color: #94A3B8;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            overflow-y: auto;
+            line-height: 1.5;
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+            border-left: 2px solid #334155;
+            padding-left: 8px;
+        }
+
+        .log-time {
+            color: #475569;
+            margin-right: 8px;
+        }
+
+        .log-tag {
+            color: #38BDF8;
+            margin-right: 8px;
+        }
+
+        force-calendar {
+            height: 100%;
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar {
+                display: none;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="app">
+    <div class="dashboard">
+        <header>
+            <div class="logo-area">
+                <div class="logo-icon">F</div>
+                <div class="logo-text">Force Calendar <span class="version-badge">v0.1.0-alpha</span></div>
+            </div>
+            <div class="header-actions">
+                <a href="https://github.com/forceCalendar/forceCalendar" target="_blank" class="btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                    </svg>
+                    View Source
+                </a>
+            </div>
+        </header>
+
+        <main>
+            <aside class="sidebar">
+                <div class="control-group">
+                    <h3>Actions</h3>
+                    <button class="btn btn-primary" id="add-random-event">
+                        <span>+</span> Add Random Event
+                    </button>
+                    <button class="btn" id="go-to-today">
+                        Go to Today
+                    </button>
+                </div>
+
+                <div class="control-group">
+                    <h3>Views</h3>
+                    <button class="btn" data-view="month">Month Grid</button>
+                    <button class="btn" data-view="week">Week View</button>
+                    <button class="btn" data-view="day">Day View</button>
+                </div>
+
+                <div class="event-log">
+                    <h3>Activity Log</h3>
+                    <div id="log-entries">
+                        <div class="log-entry"><span class="log-time">10:00:00</span> <span class="log-tag">[System]</span> Initializing...</div>
+                    </div>
+                </div>
+            </aside>
+
+            <section class="content">
+                <div class="calendar-container">
+                    <force-calendar id="main-calendar" view="month"></force-calendar>
+                </div>
+            </section>
+        </main>
     </div>
 
     <script type="module">
         import '/src/index.js';
 
-        // Wait for custom element to be defined, then create it dynamically
-        customElements.whenDefined('force-calendar').then(() => {
-            const app = document.getElementById('app');
-            const calendar = document.createElement('force-calendar');
-            calendar.setAttribute('view', 'month');
-            app.appendChild(calendar);
-            
-            // Helper to add days to today
-            const addDays = (days) => {
-                const d = new Date();
-                d.setDate(d.getDate() + days);
-                return d;
-            };
+        const calendar = document.getElementById('main-calendar');
+        const logEntries = document.getElementById('log-entries');
 
-            // Sample Events Data
-            const events = [
+        function addLog(tag, message) {
+            const time = new Date().toLocaleTimeString('en-GB', { hour12: false });
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<span class="log-time">${time}</span> <span class="log-tag">[${tag}]</span> ${message}`;
+            logEntries.insertBefore(entry, logEntries.firstChild);
+        }
+
+        // Wait for definition
+        customElements.whenDefined('force-calendar').then(() => {
+            addLog('System', 'Calendar component ready');
+
+            // Sample Events
+            const sampleEvents = [
                 {
                     id: '1',
                     title: 'Project Kickoff',
                     start: new Date().setHours(10, 0),
                     end: new Date().setHours(11, 30),
-                    backgroundColor: '#3B82F6' // Blue
+                    backgroundColor: '#3B82F6'
                 },
                 {
                     id: '2',
-                    title: 'Design Review',
+                    title: 'Strategic Planning',
                     start: new Date().setHours(14, 0),
-                    end: new Date().setHours(15, 0),
-                    backgroundColor: '#8B5CF6' // Purple
-                },
-                {
-                    id: '3',
-                    title: 'Development Sprint',
-                    start: addDays(1),
-                    end: addDays(3),
-                    allDay: true,
-                    backgroundColor: '#10B981' // Emerald
-                },
-                {
-                    id: '4',
-                    title: 'Client Meeting',
-                    start: addDays(2).setHours(11, 0),
-                    end: addDays(2).setHours(12, 0),
-                    backgroundColor: '#F59E0B' // Amber
-                },
-                {
-                    id: '5',
-                    title: 'Team Standup',
-                    start: addDays(-1).setHours(9, 30),
-                    end: addDays(-1).setHours(10, 0),
-                    backgroundColor: '#EF4444' // Red
-                },
-                {
-                    id: '6',
-                    title: 'Quarterly Planning',
-                    start: addDays(5),
-                    end: addDays(5),
-                    allDay: true,
-                    backgroundColor: '#6366F1' // Indigo
+                    end: new Date().setHours(16, 0),
+                    backgroundColor: '#8B5CF6'
                 }
             ];
 
-            // Add events with a slight delay to ensure state is ready
-            setTimeout(() => {
-                events.forEach(event => calendar.addEvent(event));
-            }, 500);
+            sampleEvents.forEach(e => calendar.addEvent(e));
+            addLog('System', 'Loaded sample events');
+
+            // Listen for component events
+            calendar.addEventListener('calendar-navigate', (e) => {
+                addLog('Nav', `Navigated: ${e.detail.action}`);
+            });
+
+            calendar.addEventListener('calendar-view-change', (e) => {
+                addLog('View', `Changed to: ${e.detail.view}`);
+            });
+
+            calendar.addEventListener('calendar-event-added', (e) => {
+                addLog('Event', `Added: "${e.detail.event.title}"`);
+            });
+
+            calendar.addEventListener('calendar-date-select', (e) => {
+                addLog('Select', `Date selected: ${e.detail.date.toLocaleDateString()}`);
+            });
+
+            // External Controls
+            document.getElementById('add-random-event').addEventListener('click', () => {
+                const titles = ['Coffee Break', 'Sync Meeting', 'Code Review', 'Deep Work', 'Lunch'];
+                const colors = ['#EF4444', '#10B981', '#F59E0B', '#3B82F6', '#8B5CF6'];
+                
+                const randomDate = new Date();
+                randomDate.setDate(randomDate.getDate() + (Math.floor(Math.random() * 10) - 5));
+                randomDate.setHours(Math.floor(Math.random() * 8) + 9, 0, 0);
+
+                const event = {
+                    id: Math.random().toString(36).substr(2, 9),
+                    title: titles[Math.floor(Math.random() * titles.length)],
+                    start: randomDate,
+                    end: new Date(randomDate.getTime() + 60 * 60 * 1000),
+                    backgroundColor: colors[Math.floor(Math.random() * colors.length)]
+                };
+
+                calendar.addEvent(event);
+            });
+
+            document.getElementById('go-to-today').addEventListener('click', () => {
+                calendar.today();
+            });
+
+            document.querySelectorAll('[data-view]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    calendar.setView(e.target.dataset.view);
+                });
+            });
         });
     </script>
 </body>
