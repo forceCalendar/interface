@@ -108,9 +108,9 @@ class StateManager {
     }
 
     setDate(date) {
-        this.calendar.setDate(date);
-        this.setState({ currentDate: date });
-        eventBus.emit('date:changed', { date });
+        this.calendar.goToDate(date);
+        this.setState({ currentDate: this.calendar.getCurrentDate() });
+        eventBus.emit('date:changed', { date: this.state.currentDate });
     }
 
     getCurrentDate() {
@@ -165,7 +165,7 @@ class StateManager {
     }
 
     deleteEvent(eventId) {
-        const deleted = this.calendar.deleteEvent(eventId);
+        const deleted = this.calendar.removeEvent(eventId);
         if (deleted) {
             this.state.events = this.state.events.filter(e => e.id !== eventId);
             this.setState({ events: [...this.state.events] });
