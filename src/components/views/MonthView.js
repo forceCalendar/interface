@@ -5,15 +5,17 @@
  */
 
 import { BaseComponent } from '../../core/BaseComponent.js';
+import { DOMUtils } from '../../utils/DOMUtils.js';
 import { DateUtils } from '../../utils/DateUtils.js';
-import { StyleUtils } from '../../utils/StyleUtils.js';
-import eventBus from '../../core/EventBus.js';
 
 export class MonthView extends BaseComponent {
     constructor() {
         super();
         this._stateManager = null;
         this.viewData = null;
+        this.config = {
+            maxEventsToShow: 3,
+        };
     }
 
     set stateManager(manager) {
@@ -30,12 +32,36 @@ export class MonthView extends BaseComponent {
     }
 
     handleStateUpdate(newState, oldState) {
-        // Re-render on relevant state changes
-        const relevantKeys = ['currentDate', 'events', 'selectedDate', 'selectedEvent'];
-        const hasRelevantChange = relevantKeys.some(key => newState[key] !== oldState?.[key]);
+        if (newState.currentDate !== oldState.currentDate) {
+            this.loadViewData(); // Full reload if the month/year changes
+            return;
+        }
 
-        if (hasRelevantChange) {
-            this.loadViewData();
+        if (newState.events !== oldState.events) {
+            this.updateEvents();
+        }
+
+        if (newState.selectedDate !== oldState.selectedDate) {
+            this.updateSelection(newState.selectedDate, oldState.selectedDate);
+        }
+    }
+
+    updateEvents() {
+        this.loadViewData(); // For now, we still do a full reload. A more granular update would be more complex.
+    }
+
+    updateSelection(newDate, oldDate) {
+        if (oldDate) {
+            const oldDateEl = this.shadowRoot.querySelector(`[data-date^="${oldDate.toISOString().split('T')[0]}"]`);
+            if (oldDateEl) {
+                oldDateEl.classList.remove('selected');
+            }
+        }
+        if (newDate) {
+            const newDateEl = this.shadowRoot.querySelector(`[data-date^="${newDate.toISOString().split('T')[0]}"]`);
+            if (newDateEl) {
+                newDateEl.classList.add('selected');
+            }
         }
     }
 
@@ -50,14 +76,26 @@ export class MonthView extends BaseComponent {
     processViewData(viewData) {
         if (!viewData || !viewData.weeks) return null;
 
-        // ViewData already has weeks from Core, just enhance each day
+        const selectedDate = this.stateManager?.getState()?.selectedDate;
+
         const weeks = viewData.weeks.map(week => {
-            return week.days.map(day => ({
-                ...day,
-                date: new Date(day.date), // Convert string to Date object
-                isOtherMonth: !day.isCurrentMonth,
-                isSelected: this.isSelectedDate(new Date(day.date))
-            }));
+            return week.days.map(day => {
+                const dayDate = new Date(day.date);
+                const isSelected = selectedDate && dayDate.toDateString() === selectedDate.toDateString();
+                
+                const processedEvents = day.events.map(event => ({
+                    ...event,
+                    textColor: this.getContrastingTextColor(event.backgroundColor)
+                }));
+
+                return {
+                    ...day,
+                    date: dayDate,
+                    isOtherMonth: !day.isCurrentMonth,
+                    isSelected,
+                    events: processedEvents,
+                };
+            });
         });
 
         return {
@@ -66,6 +104,23 @@ export class MonthView extends BaseComponent {
             month: viewData.month,
             year: viewData.year
         };
+    }
+
+    getContrastingTextColor(bgColor) {
+        if (!bgColor) return 'white';
+        const color = (bgColor.charAt(0) === '#') ? bgColor.substring(1, 7) : bgColor;
+        const r = parseInt(color.substring(0, 2), 16);
+        const g = parseInt(color.substring(2, 4), 16);
+        const b = parseInt(color.substring(4, 6), 16);
+        const uicolors = [r / 255, g / 255, b / 255];
+        const c = uicolors.map((col) => {
+            if (col <= 0.03928) {
+                return col / 12.92;
+            }
+            return Math.pow((col + 0.055) / 1.055, 2.4);
+        });
+        const L = (0.2126 * c[0]) + (0.7152 * c[1]) + (0.0722 * c[2]);
+        return (L > 0.179) ? 'black' : 'white';
     }
 
     isSelectedDate(date) {
@@ -372,10 +427,9 @@ export class MonthView extends BaseComponent {
         if (isSelected) classes.push('selected');
         if (isWeekend) classes.push('weekend');
 
-        // Render events (show max 3, then "+X more")
-        const maxEventsToShow = 3;
-        const visibleEvents = events.slice(0, maxEventsToShow);
-        const remainingCount = events.length - maxEventsToShow;
+        // Render events
+        const visibleEvents = events.slice(0, this.config.maxEventsToShow);
+        const remainingCount = events.length - this.config.maxEventsToShow;
 
         const eventsHtml = visibleEvents.map(event => this.renderEvent(event)).join('');
         const moreHtml = remainingCount > 0 ?
@@ -397,17 +451,11 @@ export class MonthView extends BaseComponent {
     }
 
     renderEvent(event) {
-        const { title, start, end, allDay, backgroundColor, textColor } = event;
+        const { title, start, allDay, backgroundColor, textColor } = event;
 
         let style = '';
         if (backgroundColor) {
-            style += `background-color: ${backgroundColor};`;
-            // Ensure high contrast text if custom BG is used
-            if (textColor) {
-                style += `color: ${textColor};`;
-            } else {
-                style += `color: white;`; 
-            }
+            style += `background-color: ${backgroundColor}; color: ${textColor};`;
         }
 
         let timeStr = '';
@@ -422,9 +470,9 @@ export class MonthView extends BaseComponent {
             <div class="${classes.join(' ')}"
                  style="${style}"
                  data-event-id="${event.id}"
-                 title="${this.escapeHtml(title)}">
+                 title="${DOMUtils.escapeHTML(title)}">
                 ${timeStr ? `<span class="event-time">${timeStr}</span>` : ''}
-                <span class="event-title">${this.escapeHtml(title)}</span>
+                <span class="event-title">${DOMUtils.escapeHTML(title)}</span>
             </div>
         `;
     }
@@ -476,12 +524,6 @@ export class MonthView extends BaseComponent {
         this.emit('more-events-click', { date, events });
     }
 
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
     unmount() {
         if (this.unsubscribe) {
             this.unsubscribe();
@@ -490,5 +532,4 @@ export class MonthView extends BaseComponent {
 }
 
 // Export both the class and as default
-export { MonthView as MonthViewDefault };
 export default MonthView;

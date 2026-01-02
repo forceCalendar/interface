@@ -193,34 +193,33 @@ class StateManager {
     }
 
     enrichViewData(viewData) {
+        const selectedDateString = this.state.selectedDate?.toDateString();
+
         // Add additional UI-specific data to view data
-        // Core returns weeks with days, not a flat dates array
         if (viewData.weeks) {
             viewData.weeks = viewData.weeks.map(week => ({
                 ...week,
-                days: week.days.map(day => ({
-                    ...day,
-                    // Core already provides isToday and isWeekend
-                    isSelected: this.isSelectedDate(new Date(day.date)),
-                    // Ensure events are included
-                    events: day.events || this.getEventsForDate(new Date(day.date))
-                }))
+                days: week.days.map(day => {
+                    const dayDate = new Date(day.date);
+                    return {
+                        ...day,
+                        isSelected: dayDate.toDateString() === selectedDateString,
+                        events: day.events || this.getEventsForDate(dayDate)
+                    };
+                })
             }));
         }
 
         // Handle day view specifically
         if (viewData.days) {
-            viewData.days = viewData.days.map(day => ({
-                ...day,
-                isSelected: this.isSelectedDate(new Date(day.date)),
-                // Ensure events are included
-                events: day.events || this.getEventsForDate(new Date(day.date))
-            }));
-        }
-
-        // Handle single day structure (for day view)
-        if (viewData.date && !viewData.days && !viewData.weeks) {
-            viewData.events = viewData.events || this.getEventsForDate(new Date(viewData.date));
+            viewData.days = viewData.days.map(day => {
+                const dayDate = new Date(day.date);
+                return {
+                    ...day,
+                    isSelected: dayDate.toDateString() === selectedDateString,
+                    events: day.events || this.getEventsForDate(dayDate)
+                };
+            });
         }
 
         return viewData;
@@ -230,6 +229,13 @@ class StateManager {
     selectEvent(event) {
         this.setState({ selectedEvent: event });
         eventBus.emit('event:selected', { event });
+    }
+
+    selectEventById(eventId) {
+        const event = this.state.events.find(e => e.id === eventId);
+        if (event) {
+            this.selectEvent(event);
+        }
     }
 
     deselectEvent() {
