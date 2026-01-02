@@ -31,17 +31,17 @@ export class DayView extends BaseComponent {
 
     handleStateUpdate(newState, oldState) {
         // Granular updates
-        if (newState.currentDate !== oldState.currentDate || newState.view !== oldState.view) {
+        if (newState.currentDate !== oldState?.currentDate || newState.view !== oldState?.view) {
             this.loadViewData();
             return;
         }
 
-        if (newState.events !== oldState.events) {
+        if (newState.events !== oldState?.events) {
             this.loadViewData(); // Simple reload for now
         }
 
-        if (newState.selectedDate !== oldState.selectedDate) {
-            this.updateSelection(newState.selectedDate, oldState.selectedDate);
+        if (newState.selectedDate !== oldState?.selectedDate) {
+            this.updateSelection(newState.selectedDate, oldState?.selectedDate);
         }
     }
 
@@ -285,7 +285,7 @@ export class DayView extends BaseComponent {
     renderNowIndicator() {
         const now = new Date();
         const minutes = now.getHours() * 60 + now.getMinutes();
-        return \`<div class="now-indicator" style="top: \${minutes}px"></div>\`;
+        return `<div class="now-indicator" style="top: ${minutes}px"></div>`;
     }
 
     afterRender() {
