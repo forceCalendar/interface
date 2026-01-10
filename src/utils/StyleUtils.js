@@ -313,6 +313,50 @@ export class StyleUtils {
     }
 
     /**
+     * Sanitize color value to prevent CSS injection
+     * Returns the color if valid, or a fallback color if invalid
+     */
+    static sanitizeColor(color, fallback = 'var(--fc-primary-color)') {
+        if (!color || typeof color !== 'string') {
+            return fallback;
+        }
+
+        // Trim and check for dangerous characters that could break out of CSS
+        const trimmed = color.trim();
+        if (/[;{}()<>\"\'\\]/.test(trimmed)) {
+            return fallback;
+        }
+
+        // Allow hex colors (#RGB, #RRGGBB, #RRGGBBAA)
+        if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$/.test(trimmed)) {
+            return trimmed;
+        }
+
+        // Allow CSS variables
+        if (/^var\(--[a-zA-Z0-9-]+\)$/.test(trimmed)) {
+            return trimmed;
+        }
+
+        // Allow rgb/rgba with numbers only
+        if (/^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*(0|1|0?\.\d+))?\s*\)$/.test(trimmed)) {
+            return trimmed;
+        }
+
+        // Allow safe CSS color keywords
+        const safeKeywords = [
+            'transparent', 'currentColor', 'inherit',
+            'black', 'white', 'red', 'green', 'blue', 'yellow', 'orange', 'purple',
+            'pink', 'brown', 'gray', 'grey', 'cyan', 'magenta', 'lime', 'navy',
+            'teal', 'aqua', 'maroon', 'olive', 'silver', 'fuchsia'
+        ];
+        if (safeKeywords.includes(trimmed.toLowerCase())) {
+            return trimmed;
+        }
+
+        return fallback;
+    }
+
+    /**
      * Convert hex to rgba
      */
     static hexToRgba(hex, alpha = 1) {

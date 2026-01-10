@@ -7,6 +7,7 @@
 import { BaseComponent } from '../../core/BaseComponent.js';
 import { DOMUtils } from '../../utils/DOMUtils.js';
 import { DateUtils } from '../../utils/DateUtils.js';
+import { StyleUtils } from '../../utils/StyleUtils.js';
 
 export class MonthView extends BaseComponent {
     constructor() {
@@ -455,7 +456,9 @@ export class MonthView extends BaseComponent {
 
         let style = '';
         if (backgroundColor) {
-            style += `background-color: ${backgroundColor}; color: ${textColor};`;
+            const safeColor = StyleUtils.sanitizeColor(backgroundColor);
+            const safeTextColor = StyleUtils.sanitizeColor(textColor, 'white');
+            style += `background-color: ${safeColor}; color: ${safeTextColor};`;
         }
 
         let timeStr = '';

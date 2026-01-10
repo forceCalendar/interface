@@ -318,18 +318,18 @@ export class DayView extends BaseComponent {
     renderTimedEvent(event) {
         const start = new Date(event.start);
         const end = new Date(event.end);
-        
+
         const startMinutes = start.getHours() * 60 + start.getMinutes();
         const durationMinutes = (end - start) / (1000 * 60);
-        
+
         const top = startMinutes;
         const height = Math.max(durationMinutes, 30);
-        
-        const color = event.backgroundColor || 'var(--fc-primary-color)';
-        const textColor = StyleUtils.getContrastColor(color);
+
+        const color = StyleUtils.sanitizeColor(event.backgroundColor);
+        const textColor = StyleUtils.sanitizeColor(StyleUtils.getContrastColor(color), 'white');
 
         return `
-            <div class="event-container" 
+            <div class="event-container"
                  style="top: ${top}px; height: ${height}px; background-color: ${color}; color: ${textColor};"
                  data-event-id="${event.id}">
                 <span class="event-title">${DOMUtils.escapeHTML(event.title)}</span>
@@ -339,11 +339,11 @@ export class DayView extends BaseComponent {
     }
 
     renderAllDayEvent(event) {
-        const color = event.backgroundColor || 'var(--fc-primary-color)';
-        const textColor = StyleUtils.getContrastColor(color);
-        
+        const color = StyleUtils.sanitizeColor(event.backgroundColor);
+        const textColor = StyleUtils.sanitizeColor(StyleUtils.getContrastColor(color), 'white');
+
         return `
-            <div class="event-item" 
+            <div class="event-item"
                  style="background-color: ${color}; color: ${textColor}; font-size: 12px; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-weight: 500; margin-bottom: 2px;"
                  data-event-id="${event.id}">
                 ${DOMUtils.escapeHTML(event.title)}
