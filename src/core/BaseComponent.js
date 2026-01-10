@@ -13,7 +13,7 @@ export class BaseComponent extends HTMLElement {
     constructor() {
         super();
         this.attachShadow({ mode: 'open' });
-        this._listeners = new Map();
+        this._listeners = [];
         this._state = null;
         this._props = new Map();
         this._initialized = false;
@@ -49,10 +49,10 @@ export class BaseComponent extends HTMLElement {
 
     cleanup() {
         // Clean up event listeners
-        this._listeners.forEach((listener, element) => {
-            element.removeEventListener(listener.event, listener.handler);
+        this._listeners.forEach(({ element, event, handler }) => {
+            element.removeEventListener(event, handler);
         });
-        this._listeners.clear();
+        this._listeners = [];
     }
 
     // State management
@@ -94,7 +94,7 @@ export class BaseComponent extends HTMLElement {
         }
         const boundHandler = handler.bind(this);
         element.addEventListener(event, boundHandler);
-        this._listeners.set(element, { event, handler: boundHandler });
+        this._listeners.push({ element, event, handler: boundHandler });
     }
 
     emit(eventName, detail = {}) {
