@@ -120,8 +120,8 @@ jobs:
     - name: Commit and Push changes
       if: steps.check_version.outputs.exists == 'false'
       run: |
-        git add package.json package-lock.json
-        git commit -m "Release ${{ steps.version_bump.outputs.new_version }} [skip ci]"
+        git add package.json package-lock.json || true
+        git diff --staged --quiet || git commit -m "Release ${{ steps.version_bump.outputs.new_version }} [skip ci]"
 
         # Only create tag if it doesn't already exist
         if ! git rev-parse "${{ steps.version_bump.outputs.new_version }}" >/dev/null 2>&1; then
