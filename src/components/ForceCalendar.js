@@ -436,13 +436,13 @@ export class ForceCalendar extends BaseComponent {
             viewElement.stateManager = this.stateManager;
         }
 
-        // Add event listeners for buttons
+        // Add event listeners for buttons using tracked addListener
         this.$$('[data-action]').forEach(button => {
-            button.addEventListener('click', this.handleNavigation.bind(this));
+            this.addListener(button, 'click', this.handleNavigation);
         });
 
         this.$$('[data-view]').forEach(button => {
-            button.addEventListener('click', this.handleViewChange.bind(this));
+            this.addListener(button, 'click', this.handleViewChange);
         });
 
         // Event Modal Handling
@@ -450,13 +450,13 @@ export class ForceCalendar extends BaseComponent {
         const createBtn = this.$('#create-event-btn');
 
         if (createBtn && modal) {
-            createBtn.addEventListener('click', () => {
+            this.addListener(createBtn, 'click', () => {
                 modal.open(new Date());
             });
         }
 
         // Listen for day clicks from the view
-        this.shadowRoot.addEventListener('day-click', (e) => {
+        this.addListener(this.shadowRoot, 'day-click', (e) => {
             if (modal) {
                 modal.open(e.detail.date);
             }
@@ -464,13 +464,13 @@ export class ForceCalendar extends BaseComponent {
 
         // Handle event saving
         if (modal) {
-            modal.addEventListener('save', (e) => {
+            this.addListener(modal, 'save', (e) => {
                 const eventData = e.detail;
                 // Robust Safari support check for randomUUID
-                const id = (window.crypto && typeof window.crypto.randomUUID === 'function') 
-                    ? window.crypto.randomUUID() 
+                const id = (window.crypto && typeof window.crypto.randomUUID === 'function')
+                    ? window.crypto.randomUUID()
                     : Math.random().toString(36).substring(2, 15);
-                    
+
                 this.stateManager.addEvent({
                     id,
                     ...eventData
