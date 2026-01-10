@@ -102,13 +102,14 @@ class EventBus {
             }
         }
 
-        // Handle wildcard subscriptions
-        for (const subscription of this.wildcardHandlers) {
+        // Handle wildcard subscriptions (copy Set to avoid mutation during iteration)
+        const toRemove = [];
+        for (const subscription of [...this.wildcardHandlers]) {
             if (this.matchesPattern(eventName, subscription.pattern)) {
                 const { handler, once } = subscription;
 
                 if (once) {
-                    this.wildcardHandlers.delete(subscription);
+                    toRemove.push(subscription);
                 }
 
                 try {
@@ -121,6 +122,8 @@ class EventBus {
                 }
             }
         }
+        // Remove one-time handlers after iteration
+        toRemove.forEach(sub => this.wildcardHandlers.delete(sub));
 
         return Promise.all(promises);
     }

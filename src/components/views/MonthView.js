@@ -108,11 +108,30 @@ export class MonthView extends BaseComponent {
     }
 
     getContrastingTextColor(bgColor) {
-        if (!bgColor) return 'white';
-        const color = (bgColor.charAt(0) === '#') ? bgColor.substring(1, 7) : bgColor;
-        const r = parseInt(color.substring(0, 2), 16);
-        const g = parseInt(color.substring(2, 4), 16);
-        const b = parseInt(color.substring(4, 6), 16);
+        if (!bgColor || typeof bgColor !== 'string') return 'white';
+
+        // Extract hex color, removing # if present
+        const color = (bgColor.charAt(0) === '#') ? bgColor.substring(1) : bgColor;
+
+        // Validate hex format (3 or 6 characters)
+        if (!/^[0-9A-Fa-f]{3}$|^[0-9A-Fa-f]{6}$/.test(color)) {
+            return 'white'; // Fallback for invalid format
+        }
+
+        // Expand 3-char hex to 6-char
+        const fullColor = color.length === 3
+            ? color[0] + color[0] + color[1] + color[1] + color[2] + color[2]
+            : color;
+
+        const r = parseInt(fullColor.substring(0, 2), 16);
+        const g = parseInt(fullColor.substring(2, 4), 16);
+        const b = parseInt(fullColor.substring(4, 6), 16);
+
+        // Check for NaN (shouldn't happen with validation, but just in case)
+        if (isNaN(r) || isNaN(g) || isNaN(b)) {
+            return 'white';
+        }
+
         const uicolors = [r / 255, g / 255, b / 255];
         const c = uicolors.map((col) => {
             if (col <= 0.03928) {

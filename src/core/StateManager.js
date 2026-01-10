@@ -145,33 +145,53 @@ class StateManager {
     // Event management
     addEvent(event) {
         const addedEvent = this.calendar.addEvent(event);
-        this.state.events.push(addedEvent);
-        this.setState({ events: [...this.state.events] });
+        if (!addedEvent) {
+            console.error('Failed to add event to calendar');
+            eventBus.emit('event:error', { action: 'add', event, error: 'Failed to add event' });
+            return null;
+        }
+        // Create new array to avoid mutation before setState
+        const newEvents = [...this.state.events, addedEvent];
+        this.setState({ events: newEvents });
         eventBus.emit('event:added', { event: addedEvent });
         return addedEvent;
     }
 
     updateEvent(eventId, updates) {
         const event = this.calendar.updateEvent(eventId, updates);
-        if (event) {
-            const index = this.state.events.findIndex(e => e.id === eventId);
-            if (index > -1) {
-                this.state.events[index] = event;
-                this.setState({ events: [...this.state.events] });
-                eventBus.emit('event:updated', { event });
-            }
+        if (!event) {
+            console.error(`Failed to update event: ${eventId}`);
+            eventBus.emit('event:error', { action: 'update', eventId, updates, error: 'Event not found in calendar' });
+            return null;
         }
+
+        const index = this.state.events.findIndex(e => e.id === eventId);
+        if (index === -1) {
+            console.error(`Event ${eventId} not found in state`);
+            eventBus.emit('event:error', { action: 'update', eventId, error: 'Event not found in state' });
+            return null;
+        }
+
+        // Create new array to avoid mutation before setState
+        const newEvents = [...this.state.events];
+        newEvents[index] = event;
+        this.setState({ events: newEvents });
+        eventBus.emit('event:updated', { event });
         return event;
     }
 
     deleteEvent(eventId) {
         const deleted = this.calendar.removeEvent(eventId);
-        if (deleted) {
-            this.state.events = this.state.events.filter(e => e.id !== eventId);
-            this.setState({ events: [...this.state.events] });
-            eventBus.emit('event:deleted', { eventId });
+        if (!deleted) {
+            console.error(`Failed to delete event: ${eventId}`);
+            eventBus.emit('event:error', { action: 'delete', eventId, error: 'Event not found' });
+            return false;
         }
-        return deleted;
+        // Create new array to avoid mutation before setState
+        const newEvents = this.state.events.filter(e => e.id !== eventId);
+        this.setState({ events: newEvents });
+        eventBus.emit('event:deleted', { eventId });
+        return true;
     }
 
     getEvents() {

@@ -255,6 +255,15 @@ export class DOMUtils {
         const focusableElements = container.querySelectorAll(
             'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
         );
+
+        // Handle case where there are no focusable elements
+        if (focusableElements.length === 0) {
+            // Make container focusable as fallback
+            container.setAttribute('tabindex', '-1');
+            container.focus();
+            return () => container.removeAttribute('tabindex');
+        }
+
         const firstFocusable = focusableElements[0];
         const lastFocusable = focusableElements[focusableElements.length - 1];
 
@@ -263,12 +272,12 @@ export class DOMUtils {
 
             if (e.shiftKey) {
                 if (document.activeElement === firstFocusable) {
-                    lastFocusable.focus();
+                    lastFocusable?.focus();
                     e.preventDefault();
                 }
             } else {
                 if (document.activeElement === lastFocusable) {
-                    firstFocusable.focus();
+                    firstFocusable?.focus();
                     e.preventDefault();
                 }
             }
