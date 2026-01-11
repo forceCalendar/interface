@@ -20,8 +20,21 @@ export class MonthView extends BaseComponent {
     }
 
     set stateManager(manager) {
+        console.log('[MonthView] stateManager setter called with:', !!manager);
+        this.setStateManager(manager);
+    }
+
+    // Method alternative for Salesforce Locker Service compatibility
+    setStateManager(manager) {
+        console.log('[MonthView] setStateManager method called with:', !!manager);
+        // Prevent re-initialization if same manager
+        if (this._stateManager === manager) {
+            console.log('[MonthView] stateManager already set, skipping');
+            return;
+        }
         this._stateManager = manager;
         if (manager) {
+            console.log('[MonthView] Subscribing to state changes and loading view data');
             // Subscribe to state changes
             this.unsubscribe = manager.subscribe(this.handleStateUpdate.bind(this));
             this.loadViewData();
@@ -67,11 +80,15 @@ export class MonthView extends BaseComponent {
     }
 
     loadViewData() {
+        console.log('[MonthView] loadViewData called, stateManager:', !!this.stateManager);
         if (!this.stateManager) return;
 
         const viewData = this.stateManager.getViewData();
+        console.log('[MonthView] viewData from stateManager:', viewData);
         this.viewData = this.processViewData(viewData);
+        console.log('[MonthView] processed viewData:', this.viewData);
         this.render();
+        console.log('[MonthView] render completed');
     }
 
     processViewData(viewData) {

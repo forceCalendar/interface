@@ -432,8 +432,20 @@ export class ForceCalendar extends BaseComponent {
     afterRender() {
         // Set up view component
         const viewElement = this.$('#calendar-view');
+        console.log('[ForceCalendar] afterRender - viewElement:', viewElement);
+        console.log('[ForceCalendar] afterRender - stateManager:', !!this.stateManager);
         if (viewElement && this.stateManager) {
-            viewElement.stateManager = this.stateManager;
+            // Use method call for Salesforce Locker Service compatibility
+            // Property setters may not work through Locker Service proxies
+            if (typeof viewElement.setStateManager === 'function') {
+                console.log('[ForceCalendar] Using setStateManager method');
+                viewElement.setStateManager(this.stateManager);
+            } else {
+                console.log('[ForceCalendar] Using stateManager property setter');
+                viewElement.stateManager = this.stateManager;
+            }
+        } else {
+            console.log('[ForceCalendar] Could not set stateManager - viewElement:', !!viewElement, 'stateManager:', !!this.stateManager);
         }
 
         // Add event listeners for buttons using tracked addListener

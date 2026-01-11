@@ -18,6 +18,12 @@ export class DayView extends BaseComponent {
     }
 
     set stateManager(manager) {
+        this.setStateManager(manager);
+    }
+
+    // Method alternative for Salesforce Locker Service compatibility
+    setStateManager(manager) {
+        if (this._stateManager === manager) return;
         this._stateManager = manager;
         if (manager) {
             this.unsubscribe = manager.subscribe(this.handleStateUpdate.bind(this));
