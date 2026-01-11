@@ -414,6 +414,6 @@ export class EventForm extends BaseComponent {
     }
 }
 
-if (!customElements.get('force-calendar-event-form')) {
-    customElements.define('force-calendar-event-form', EventForm);
+if (!customElements.get('fc-calendar-event-form')) {
+    customElements.define('fc-calendar-event-form', EventForm);
 }

@@ -36,7 +36,7 @@
             color: #f1f5f9;
             margin-top: 0;
         }
-        force-calendar {
+        fc-calendar {
             display: block;
             width: 100%;
             min-height: 600px;
@@ -112,13 +112,13 @@
             </div>
 
             <!-- The Calendar Web Component -->
-            <force-calendar
+            <fc-calendar
                 id="calendar"
                 view="month"
                 locale="en-US"
                 timezone="America/New_York"
                 week-starts-on="0">
-            </force-calendar>
+            </fc-calendar>
 
             <div class="info">
                 <p>This is a live demo of the <code>@forcecalendar/interface</code> package.</p>
@@ -147,7 +147,7 @@
     <!-- Load the library -->
     <script type="module">
         // For development, use local build
-        import './dist/force-calendar-interface.esm.js';
+        import './dist/fc-calendar-interface.esm.js';
 
         // Wait for component to be ready
         window.addEventListener('DOMContentLoaded', () => {

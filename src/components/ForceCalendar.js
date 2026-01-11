@@ -17,14 +17,14 @@ import { DayView } from './views/DayView.js';
 import { EventForm } from './EventForm.js'; // Import EventForm
 
 // Register view components
-if (!customElements.get('force-calendar-month')) {
-    customElements.define('force-calendar-month', MonthView);
+if (!customElements.get('fc-calendar-month')) {
+    customElements.define('fc-calendar-month', MonthView);
 }
-if (!customElements.get('force-calendar-week')) {
-    customElements.define('force-calendar-week', WeekView);
+if (!customElements.get('fc-calendar-week')) {
+    customElements.define('fc-calendar-week', WeekView);
 }
-if (!customElements.get('force-calendar-day')) {
-    customElements.define('force-calendar-day', DayView);
+if (!customElements.get('fc-calendar-day')) {
+    customElements.define('fc-calendar-day', DayView);
 }
 // EventForm is self-registering in its file
 
@@ -273,9 +273,9 @@ export class ForceCalendar extends BaseComponent {
             }
 
             /* Ensure view components have proper dimensions */
-            force-calendar-month,
-            force-calendar-week,
-            force-calendar-day {
+            fc-calendar-month,
+            fc-calendar-week,
+            fc-calendar-day {
                 display: block;
                 width: 100%;
                 height: 100%;
@@ -415,7 +415,7 @@ export class ForceCalendar extends BaseComponent {
                     `}
                 </div>
                 
-                <force-calendar-event-form id="event-modal"></force-calendar-event-form>
+                <fc-calendar-event-form id="event-modal"></fc-calendar-event-form>
             </div>
         `;
     }
@@ -425,7 +425,7 @@ export class ForceCalendar extends BaseComponent {
             return '<div>Loading view...</div>';
         }
 
-        const tagName = `force-calendar-${this.currentView}`;
+        const tagName = `fc-calendar-${this.currentView}`;
         return `<${tagName} id="calendar-view"></${tagName}>`;
     }
 
@@ -585,6 +585,6 @@ export class ForceCalendar extends BaseComponent {
 }
 
 // Register component
-if (!customElements.get('force-calendar')) {
-    customElements.define('force-calendar', ForceCalendar);
+if (!customElements.get('fc-calendar')) {
+    customElements.define('fc-calendar', ForceCalendar);
 }

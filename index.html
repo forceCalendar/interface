@@ -188,7 +188,7 @@
             margin-right: 8px;
         }
 
-        force-calendar {
+        fc-calendar {
             height: 100%;
         }
 
@@ -245,7 +245,7 @@
 
             <section class="content">
                 <div class="calendar-container">
-                    <force-calendar id="main-calendar" view="month"></force-calendar>
+                    <fc-calendar id="main-calendar" view="month"></fc-calendar>
                 </div>
             </section>
         </main>
@@ -266,7 +266,7 @@
         }
 
         // Wait for definition
-        customElements.whenDefined('force-calendar').then(() => {
+        customElements.whenDefined('fc-calendar').then(() => {
             addLog('System', 'Calendar component ready');
 
             // Sample Events

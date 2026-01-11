@@ -8,7 +8,7 @@ describe('EventForm', () => {
     let form;
 
     beforeEach(() => {
-        form = document.createElement('force-calendar-event-form');
+        form = document.createElement('fc-calendar-event-form');
         document.body.appendChild(form);
     });
 
