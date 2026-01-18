@@ -39,6 +39,8 @@ export class ForceCalendar extends BaseComponent {
         super();
         this.stateManager = null;
         this.currentView = null;
+        this._hasRendered = false;  // Track if initial render is complete
+        this._cachedStyles = null;  // Cache styles to avoid recreation
     }
 
     initialize() {
@@ -83,13 +85,105 @@ export class ForceCalendar extends BaseComponent {
     }
 
     handleStateChange(newState, oldState) {
+        // If not yet rendered, do nothing (mount will handle initial render)
+        if (!this._hasRendered) {
+            return;
+        }
+
+        // Check what changed
+        const viewChanged = newState.view !== oldState?.view;
+        const dateChanged = newState.currentDate?.getTime() !== oldState?.currentDate?.getTime();
+        const eventsChanged = newState.events !== oldState?.events;
+        const loadingChanged = newState.loading !== oldState?.loading;
+        const errorChanged = newState.error !== oldState?.error;
+
+        // For loading/error state changes, do full re-render (rare)
+        if (loadingChanged || errorChanged) {
+            this.render();
+            return;
+        }
+
         // Update local view reference if needed
-        if (newState.view !== oldState?.view) {
+        if (viewChanged) {
             this.currentView = newState.view;
         }
 
-        // Re-render to update header title, active buttons, and child view
-        this.render();
+        // Targeted updates based on what changed
+        if (viewChanged) {
+            // View changed: update title, buttons, and switch view
+            this._updateTitle();
+            this._updateViewButtons();
+            this._switchView();
+        } else if (dateChanged) {
+            // Date changed: update title and re-render view
+            this._updateTitle();
+            this._updateViewContent();
+        } else if (eventsChanged) {
+            // Events changed: only re-render view content
+            this._updateViewContent();
+        }
+        // Selection changes are handled by the view internally, no action needed here
+    }
+
+    /**
+     * Update only the title text (no DOM recreation)
+     */
+    _updateTitle() {
+        const titleEl = this.$('.fc-title');
+        if (titleEl) {
+            const state = this.stateManager.getState();
+            titleEl.textContent = this.getTitle(state.currentDate, state.view);
+        }
+    }
+
+    /**
+     * Update view button active states (no DOM recreation)
+     */
+    _updateViewButtons() {
+        const state = this.stateManager.getState();
+        this.$$('[data-view]').forEach(button => {
+            const isActive = button.dataset.view === state.view;
+            button.classList.toggle('active', isActive);
+        });
+    }
+
+    /**
+     * Switch to a different view type
+     */
+    _switchView() {
+        const container = this.$('#calendar-view-container');
+        if (!container) return;
+
+        // Clean up previous view
+        if (this._currentViewInstance) {
+            if (this._currentViewInstance.cleanup) {
+                this._currentViewInstance.cleanup();
+            }
+        }
+
+        // Create new view
+        try {
+            const viewRenderer = this._createViewRenderer(this.currentView);
+            if (viewRenderer) {
+                viewRenderer._viewType = this.currentView;
+                this._currentViewInstance = viewRenderer;
+                viewRenderer.stateManager = this.stateManager;
+                viewRenderer.container = container;
+                viewRenderer.render();
+                // Note: No subscription - handleStateChange manages all view updates
+            }
+        } catch (err) {
+            console.error('[ForceCalendar] Error switching view:', err);
+        }
+    }
+
+    /**
+     * Re-render only the view content (not header)
+     */
+    _updateViewContent() {
+        if (this._currentViewInstance && this._currentViewInstance.render) {
+            this._currentViewInstance.render();
+        }
     }
 
     mount() {
@@ -571,13 +665,11 @@ export class ForceCalendar extends BaseComponent {
     afterRender() {
         // Manually instantiate and mount view component (bypasses Locker Service)
         const container = this.$('#calendar-view-container');
-        console.log('[ForceCalendar] afterRender - container:', !!container, 'stateManager:', !!this.stateManager, 'currentView:', this.currentView);
 
         // Only create view once per view type change
         if (container && this.stateManager && this.currentView) {
             // Check if container actually has content (render() clears shadow DOM)
             if (this._currentViewInstance && this._currentViewInstance._viewType === this.currentView && container.children.length > 0) {
-                console.log('[ForceCalendar] View already exists with content, skipping creation');
                 return;
             }
 
@@ -592,8 +684,6 @@ export class ForceCalendar extends BaseComponent {
                 }
             }
 
-            console.log('[ForceCalendar] Creating view for:', this.currentView);
-
             // Create a simple view renderer that doesn't use custom elements
             try {
                 const viewRenderer = this._createViewRenderer(this.currentView);
@@ -602,21 +692,9 @@ export class ForceCalendar extends BaseComponent {
                     this._currentViewInstance = viewRenderer;
                     viewRenderer.stateManager = this.stateManager;
                     viewRenderer.container = container;
-
-                    console.log('[ForceCalendar] Calling viewRenderer.render()');
                     viewRenderer.render();
-                    console.log('[ForceCalendar] viewRenderer.render() completed');
-
-                    // Subscribe to state changes (store unsubscribe function)
-                    this._viewUnsubscribe = this.stateManager.subscribe((newState, oldState) => {
-                        // Only re-render on data changes, not view changes
-                        if (newState.events !== oldState?.events ||
-                            newState.currentDate !== oldState?.currentDate) {
-                            if (viewRenderer && viewRenderer.render) {
-                                viewRenderer.render();
-                            }
-                        }
-                    });
+                    // Note: No subscription here - handleStateChange manages all view updates
+                    // via _updateViewContent(), _switchView(), or full re-render
                 }
             } catch (err) {
                 console.error('[ForceCalendar] Error creating/rendering view:', err);
@@ -664,6 +742,9 @@ export class ForceCalendar extends BaseComponent {
                 });
             });
         }
+
+        // Mark initial render as complete for targeted updates
+        this._hasRendered = true;
     }
 
     _createViewRenderer(viewName) {
