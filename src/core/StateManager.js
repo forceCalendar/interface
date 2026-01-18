@@ -39,6 +39,32 @@ class StateManager {
         this.subscribe = this.subscribe.bind(this);
         this.unsubscribe = this.unsubscribe.bind(this);
         this.setState = this.setState.bind(this);
+
+        // Initial sync of events from Core (in case events were pre-loaded)
+        this._syncEventsFromCore({ silent: true });
+    }
+
+    /**
+     * Sync state.events from Core calendar (single source of truth)
+     * This ensures state.events always matches Core's event store
+     */
+    _syncEventsFromCore(options = {}) {
+        const coreEvents = this.calendar.getEvents() || [];
+        // Only update if different to avoid unnecessary re-renders
+        if (this.state.events.length !== coreEvents.length ||
+            !this._eventsMatch(this.state.events, coreEvents)) {
+            this.setState({ events: [...coreEvents] }, options);
+        }
+        return coreEvents;
+    }
+
+    /**
+     * Check if two event arrays have the same events (by id)
+     */
+    _eventsMatch(arr1, arr2) {
+        if (arr1.length !== arr2.length) return false;
+        const ids1 = new Set(arr1.map(e => e.id));
+        return arr2.every(e => ids1.has(e.id));
     }
 
     // State management
@@ -150,14 +176,16 @@ class StateManager {
             eventBus.emit('event:error', { action: 'add', event, error: 'Failed to add event' });
             return null;
         }
-        // Create new array to avoid mutation before setState
-        const newEvents = [...this.state.events, addedEvent];
-        this.setState({ events: newEvents });
+        // Sync from Core to ensure consistency (single source of truth)
+        this._syncEventsFromCore();
         eventBus.emit('event:added', { event: addedEvent });
         return addedEvent;
     }
 
     updateEvent(eventId, updates) {
+        // First, ensure state is in sync with Core (recover from any prior desync)
+        this._syncEventsFromCore({ silent: true });
+
         const event = this.calendar.updateEvent(eventId, updates);
         if (!event) {
             console.error(`Failed to update event: ${eventId}`);
@@ -165,37 +193,39 @@ class StateManager {
             return null;
         }
 
-        const index = this.state.events.findIndex(e => e.id === eventId);
-        if (index === -1) {
-            console.error(`Event ${eventId} not found in state`);
-            eventBus.emit('event:error', { action: 'update', eventId, error: 'Event not found in state' });
-            return null;
-        }
-
-        // Create new array to avoid mutation before setState
-        const newEvents = [...this.state.events];
-        newEvents[index] = event;
-        this.setState({ events: newEvents });
+        // Sync from Core to ensure consistency (single source of truth)
+        this._syncEventsFromCore();
         eventBus.emit('event:updated', { event });
         return event;
     }
 
     deleteEvent(eventId) {
+        // First, ensure state is in sync with Core (recover from any prior desync)
+        this._syncEventsFromCore({ silent: true });
+
         const deleted = this.calendar.removeEvent(eventId);
         if (!deleted) {
             console.error(`Failed to delete event: ${eventId}`);
             eventBus.emit('event:error', { action: 'delete', eventId, error: 'Event not found' });
             return false;
         }
-        // Create new array to avoid mutation before setState
-        const newEvents = this.state.events.filter(e => e.id !== eventId);
-        this.setState({ events: newEvents });
+        // Sync from Core to ensure consistency (single source of truth)
+        this._syncEventsFromCore();
         eventBus.emit('event:deleted', { eventId });
         return true;
     }
 
     getEvents() {
-        return this.calendar.getEvents();
+        // Return from Core (source of truth)
+        return this.calendar.getEvents() || [];
+    }
+
+    /**
+     * Force sync state.events from Core calendar
+     * Use this if you've modified events directly on the Core calendar
+     */
+    syncEvents() {
+        return this._syncEventsFromCore();
     }
 
     getEventsForDate(date) {
