@@ -25,11 +25,6 @@ export { DayViewRenderer } from './renderers/DayViewRenderer.js';
 import './components/ForceCalendar.js';
 export { ForceCalendar } from './components/ForceCalendar.js';
 
-// Views (Web Components - for non-Salesforce usage)
-export { MonthView } from './components/views/MonthView.js';
-export { WeekView } from './components/views/WeekView.js';
-export { DayView } from './components/views/DayView.js';
-
 // Auto-register main component if in browser environment
 if (typeof window !== 'undefined' && typeof customElements !== 'undefined') {
     // The ForceCalendar component self-registers
