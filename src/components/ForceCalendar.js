@@ -16,23 +16,8 @@ import { MonthViewRenderer } from '../renderers/MonthViewRenderer.js';
 import { WeekViewRenderer } from '../renderers/WeekViewRenderer.js';
 import { DayViewRenderer } from '../renderers/DayViewRenderer.js';
 
-// Import view components (Web Components, for non-Salesforce usage)
-import { MonthView } from './views/MonthView.js';
-import { WeekView } from './views/WeekView.js';
-import { DayView } from './views/DayView.js';
+// Import EventForm component
 import { EventForm } from './EventForm.js';
-
-// Register view components
-if (!customElements.get('forcecal-month')) {
-    customElements.define('forcecal-month', MonthView);
-}
-if (!customElements.get('forcecal-week')) {
-    customElements.define('forcecal-week', WeekView);
-}
-if (!customElements.get('forcecal-day')) {
-    customElements.define('forcecal-day', DayView);
-}
-// EventForm is self-registering in its file
 
 
 export class ForceCalendar extends BaseComponent {
