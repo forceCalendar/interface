@@ -93,8 +93,12 @@ export class ForceCalendar extends BaseComponent {
         const errorChanged = newState.error !== oldState?.error;
 
         // For loading/error state changes, do full re-render (rare)
-        if (loadingChanged || errorChanged) {
+        if (errorChanged) {
             this.render();
+            return;
+        }
+        if (loadingChanged) {
+            this._updateLoadingState(newState.loading);
             return;
         }
 
@@ -184,15 +188,31 @@ export class ForceCalendar extends BaseComponent {
         }
     }
 
+    /**
+     * Toggle loading overlay without rebuilding the component tree.
+     */
+    _updateLoadingState(isLoading) {
+        const loadingEl = this.$('.fc-loading');
+        const viewContainer = this.$('.fc-view-container');
+        if (loadingEl) {
+            loadingEl.style.display = isLoading ? 'flex' : 'none';
+        }
+        if (viewContainer) {
+            viewContainer.style.display = isLoading ? 'none' : 'flex';
+        }
+    }
+
     mount() {
+        this.currentView = this.stateManager.getView();
         super.mount();
-        this.loadView(this.stateManager.getView());
     }
 
     loadView(viewType) {
-        // Views are already registered at the top of the file
+        if (!viewType || this.currentView === viewType) return;
         this.currentView = viewType;
-        this.render();
+        this._switchView();
+        this._updateViewButtons();
+        this._updateTitle();
     }
 
     getStyles() {
@@ -637,16 +657,13 @@ export class ForceCalendar extends BaseComponent {
                 </header>
 
                 <div class="fc-body">
-                    ${loading ? `
-                        <div class="fc-loading">
-                            <div class="fc-spinner"></div>
-                            <span>Loading...</span>
-                        </div>
-                    ` : `
-                        <div class="fc-view-container">
-                            ${this.renderView()}
-                        </div>
-                    `}
+                    <div class="fc-loading" style="display: ${loading ? 'flex' : 'none'};">
+                        <div class="fc-spinner"></div>
+                        <span>Loading...</span>
+                    </div>
+                    <div class="fc-view-container" style="display: ${loading ? 'none' : 'flex'};">
+                        ${this.renderView()}
+                    </div>
                 </div>
                 
                 <forcecal-event-form id="event-modal"></forcecal-event-form>
