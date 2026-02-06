@@ -44,7 +44,7 @@
   },
   "homepage": "https://interface.forcecalendar.org",
   "dependencies": {
-    "@forcecalendar/core": "^2.1.1"
+    "@forcecalendar/core": "^2.1.7"
   },
   "devDependencies": {
     "@babel/core": "^7.28.5",
