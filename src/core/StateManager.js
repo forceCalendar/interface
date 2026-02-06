@@ -215,6 +215,7 @@ class StateManager {
         }
         // Sync from Core to ensure consistency (single source of truth)
         this._syncEventsFromCore();
+        eventBus.emit('event:add', { event: addedEvent });
         eventBus.emit('event:added', { event: addedEvent });
         return addedEvent;
     }
@@ -232,6 +233,7 @@ class StateManager {
 
         // Sync from Core to ensure consistency (single source of truth)
         this._syncEventsFromCore();
+        eventBus.emit('event:update', { event });
         eventBus.emit('event:updated', { event });
         return event;
     }
@@ -248,6 +250,7 @@ class StateManager {
         }
         // Sync from Core to ensure consistency (single source of truth)
         this._syncEventsFromCore();
+        eventBus.emit('event:remove', { eventId });
         eventBus.emit('event:deleted', { eventId });
         return true;
     }

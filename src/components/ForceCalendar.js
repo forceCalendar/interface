@@ -68,9 +68,31 @@ export class ForceCalendar extends BaseComponent {
             this.emit('calendar-view-change', data);
         }));
 
-        // Event management events
-        this._busUnsubscribers.push(eventBus.on('event:*', (data, event) => {
-            this.emit(`calendar-event-${event.split(':')[1]}`, data);
+        const forwardEventAction = (action, data) => {
+            this.emit(`calendar-event-${action}`, data);
+        };
+
+        // Event management events (canonical + backward-compatible aliases)
+        this._busUnsubscribers.push(eventBus.on('event:add', (data) => {
+            forwardEventAction('add', data);
+        }));
+        this._busUnsubscribers.push(eventBus.on('event:update', (data) => {
+            forwardEventAction('update', data);
+        }));
+        this._busUnsubscribers.push(eventBus.on('event:remove', (data) => {
+            forwardEventAction('remove', data);
+        }));
+        this._busUnsubscribers.push(eventBus.on('event:added', (data) => {
+            forwardEventAction('add', data);
+            this.emit('calendar-event-added', data);
+        }));
+        this._busUnsubscribers.push(eventBus.on('event:updated', (data) => {
+            forwardEventAction('update', data);
+            this.emit('calendar-event-updated', data);
+        }));
+        this._busUnsubscribers.push(eventBus.on('event:deleted', (data) => {
+            forwardEventAction('remove', data);
+            this.emit('calendar-event-deleted', data);
         }));
 
         // Date selection events
