@@ -136,20 +136,19 @@ export class WeekViewRenderer extends BaseViewRenderer {
     }
 
     _attachEventHandlers() {
-        // Day column click handlers
-        this.container.querySelectorAll('.fc-week-day-column').forEach(dayEl => {
-            this.addListener(dayEl, 'click', (e) => {
-                if (e.target.closest('.fc-event')) return;
+        this.addListener(this.container, 'click', (e) => {
+            const dayEl = e.target.closest('.fc-week-day-column');
+            if (!dayEl || !this.container.contains(dayEl)) return;
+            if (e.target.closest('.fc-event')) return;
 
-                const date = new Date(dayEl.dataset.date);
-                const rect = dayEl.getBoundingClientRect();
-                const scrollContainer = this.container.querySelector('#week-scroll-container');
-                const y = e.clientY - rect.top + (scrollContainer ? scrollContainer.scrollTop : 0);
+            const date = new Date(dayEl.dataset.date);
+            const rect = dayEl.getBoundingClientRect();
+            const scrollContainer = this.container.querySelector('#week-scroll-container');
+            const y = e.clientY - rect.top + (scrollContainer ? scrollContainer.scrollTop : 0);
 
-                // Calculate time from click position
-                date.setHours(Math.floor(y / this.hourHeight), Math.floor((y % this.hourHeight) / (this.hourHeight / 60)), 0, 0);
-                this.stateManager.selectDate(date);
-            });
+            // Calculate time from click position
+            date.setHours(Math.floor(y / this.hourHeight), Math.floor((y % this.hourHeight) / (this.hourHeight / 60)), 0, 0);
+            this.stateManager.selectDate(date);
         });
 
         // Common event handlers (event clicks)

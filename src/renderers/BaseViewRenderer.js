@@ -211,16 +211,17 @@ export class BaseViewRenderer {
      * Attach common event handlers for day/event clicks
      */
     attachCommonEventHandlers() {
-        // Event click handlers
-        this.container.querySelectorAll('.fc-event').forEach(eventEl => {
-            this.addListener(eventEl, 'click', (e) => {
-                e.stopPropagation();
-                const eventId = eventEl.dataset.eventId;
-                const event = this.stateManager.getEvents().find(ev => ev.id === eventId);
-                if (event) {
-                    this.stateManager.selectEvent(event);
-                }
-            });
+        // Delegate event clicks at container level to avoid rebinding per event node.
+        this.addListener(this.container, 'click', (e) => {
+            const eventEl = e.target.closest('.fc-event');
+            if (!eventEl || !this.container.contains(eventEl)) return;
+
+            e.stopPropagation();
+            const eventId = eventEl.dataset.eventId;
+            const event = this.stateManager.getEvents().find(ev => ev.id === eventId);
+            if (event) {
+                this.stateManager.selectEvent(event);
+            }
         });
     }
 }

@@ -108,13 +108,13 @@ export class MonthViewRenderer extends BaseViewRenderer {
     }
 
     _attachEventHandlers() {
-        // Day click handlers
-        this.container.querySelectorAll('.fc-month-day').forEach(dayEl => {
-            this.addListener(dayEl, 'click', (e) => {
-                if (e.target.closest('.fc-event')) return;
-                const date = new Date(dayEl.dataset.date);
-                this.stateManager.selectDate(date);
-            });
+        this.addListener(this.container, 'click', (e) => {
+            const dayEl = e.target.closest('.fc-month-day');
+            if (!dayEl || !this.container.contains(dayEl)) return;
+            if (e.target.closest('.fc-event')) return;
+
+            const date = new Date(dayEl.dataset.date);
+            this.stateManager.selectDate(date);
         });
 
         // Common event handlers (event clicks)
