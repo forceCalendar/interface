@@ -31,6 +31,7 @@ export class ForceCalendar extends BaseComponent {
         this.currentView = null;
         this._hasRendered = false;  // Track if initial render is complete
         this._cachedStyles = null;  // Cache styles to avoid recreation
+        this._busUnsubscribers = [];
     }
 
     initialize() {
@@ -53,25 +54,29 @@ export class ForceCalendar extends BaseComponent {
     }
 
     setupEventListeners() {
+        // Clean up any existing subscriptions before re-subscribing
+        this._busUnsubscribers.forEach(unsub => unsub());
+        this._busUnsubscribers = [];
+
         // Navigation events
-        eventBus.on('navigation:*', (data, event) => {
+        this._busUnsubscribers.push(eventBus.on('navigation:*', (data, event) => {
             this.emit('calendar-navigate', { action: event.split(':')[1], ...data });
-        });
+        }));
 
         // View change events
-        eventBus.on('view:changed', (data) => {
+        this._busUnsubscribers.push(eventBus.on('view:changed', (data) => {
             this.emit('calendar-view-change', data);
-        });
+        }));
 
         // Event management events
-        eventBus.on('event:*', (data, event) => {
+        this._busUnsubscribers.push(eventBus.on('event:*', (data, event) => {
             this.emit(`calendar-event-${event.split(':')[1]}`, data);
-        });
+        }));
 
         // Date selection events
-        eventBus.on('date:selected', (data) => {
+        this._busUnsubscribers.push(eventBus.on('date:selected', (data) => {
             this.emit('calendar-date-select', data);
-        });
+        }));
     }
 
     handleStateChange(newState, oldState) {
@@ -857,10 +862,12 @@ export class ForceCalendar extends BaseComponent {
     }
 
     destroy() {
+        this._busUnsubscribers.forEach(unsub => unsub());
+        this._busUnsubscribers = [];
+
         if (this.stateManager) {
             this.stateManager.destroy();
         }
-        eventBus.clear();
         super.cleanup();
     }
 }
