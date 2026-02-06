@@ -87,7 +87,7 @@ export class WeekViewRenderer extends BaseViewRenderer {
                     <div class="fc-all-day-cell" data-date="${day.date.toISOString()}" style="border-right: 1px solid #e5e7eb; padding: 4px; display: flex; flex-direction: column; gap: 2px;">
                         ${day.allDayEvents.map(evt => `
                             <div class="fc-event fc-all-day-event" data-event-id="${this.escapeHTML(evt.id)}"
-                                 style="background-color: ${evt.backgroundColor || '#2563eb'}; font-size: 10px; padding: 2px 4px; border-radius: 2px; color: white; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                 style="background-color: ${this.getEventColor(evt)}; font-size: 10px; padding: 2px 4px; border-radius: 2px; color: white; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                 ${this.escapeHTML(evt.title)}
                             </div>
                         `).join('')}

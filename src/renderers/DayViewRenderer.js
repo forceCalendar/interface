@@ -116,7 +116,7 @@ export class DayViewRenderer extends BaseViewRenderer {
                 <div class="fc-all-day-cell" data-date="${dayDate.toISOString()}" style="padding: 6px 12px; display: flex; flex-wrap: wrap; gap: 4px;">
                     ${allDayEvents.map(evt => `
                         <div class="fc-event fc-all-day-event" data-event-id="${this.escapeHTML(evt.id)}"
-                             style="background-color: ${evt.backgroundColor || '#2563eb'}; font-size: 12px; padding: 4px 8px; border-radius: 4px; color: white; cursor: pointer; font-weight: 500;">
+                             style="background-color: ${this.getEventColor(evt)}; font-size: 12px; padding: 4px 8px; border-radius: 4px; color: white; cursor: pointer; font-weight: 500;">
                             ${this.escapeHTML(evt.title)}
                         </div>
                     `).join('')}

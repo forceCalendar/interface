@@ -98,7 +98,7 @@ export class MonthViewRenderer extends BaseViewRenderer {
     }
 
     _renderEvent(event) {
-        const color = event.backgroundColor || '#2563eb';
+        const color = this.getEventColor(event);
         return `
             <div class="fc-event" data-event-id="${this.escapeHTML(event.id)}"
                  style="background-color: ${color}; font-size: 11px; padding: 2px 6px; border-radius: 3px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;">

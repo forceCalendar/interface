@@ -171,7 +171,7 @@ export class BaseViewRenderer {
         const end = new Date(event.end);
         const startMinutes = start.getHours() * 60 + start.getMinutes();
         const durationMinutes = Math.max((end - start) / (1000 * 60), compact ? 20 : 30);
-        const color = event.backgroundColor || '#2563eb';
+        const color = this.getEventColor(event);
 
         const padding = compact ? '4px 8px' : '8px 12px';
         const fontSize = compact ? '11px' : '13px';
@@ -196,6 +196,15 @@ export class BaseViewRenderer {
                 </div>
             </div>
         `;
+    }
+
+    /**
+     * Get a safe, sanitized event color value.
+     * @param {Object} event
+     * @returns {string}
+     */
+    getEventColor(event) {
+        return StyleUtils.sanitizeColor(event?.backgroundColor, '#2563eb');
     }
 
     /**
