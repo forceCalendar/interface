@@ -19,228 +19,245 @@ import { DayViewRenderer } from '../renderers/DayViewRenderer.js';
 // Import EventForm component
 import { EventForm } from './EventForm.js';
 
-
 export class ForceCalendar extends BaseComponent {
-    static get observedAttributes() {
-        return ['view', 'date', 'locale', 'timezone', 'week-starts-on', 'height'];
+  static get observedAttributes() {
+    return ['view', 'date', 'locale', 'timezone', 'week-starts-on', 'height'];
+  }
+
+  constructor() {
+    super();
+    this.stateManager = null;
+    this.currentView = null;
+    this._hasRendered = false; // Track if initial render is complete
+    this._cachedStyles = null; // Cache styles to avoid recreation
+    this._busUnsubscribers = [];
+  }
+
+  initialize() {
+    // Initialize state manager with config from attributes
+    const config = {
+      view: this.getAttribute('view') || 'month',
+      date: this.getAttribute('date') ? new Date(this.getAttribute('date')) : new Date(),
+      locale: this.getAttribute('locale') || 'en-US',
+      timeZone: this.getAttribute('timezone') || Intl.DateTimeFormat().resolvedOptions().timeZone,
+      weekStartsOn: parseInt(this.getAttribute('week-starts-on') || '0')
+    };
+
+    this.stateManager = new StateManager(config);
+
+    // Subscribe to state changes
+    this.stateManager.subscribe(this.handleStateChange.bind(this));
+
+    // Listen for events
+    this.setupEventListeners();
+  }
+
+  setupEventListeners() {
+    // Clean up any existing subscriptions before re-subscribing
+    this._busUnsubscribers.forEach(unsub => unsub());
+    this._busUnsubscribers = [];
+
+    // Navigation events
+    this._busUnsubscribers.push(
+      eventBus.on('navigation:*', (data, event) => {
+        this.emit('calendar-navigate', { action: event.split(':')[1], ...data });
+      })
+    );
+
+    // View change events
+    this._busUnsubscribers.push(
+      eventBus.on('view:changed', data => {
+        this.emit('calendar-view-change', data);
+      })
+    );
+
+    const forwardEventAction = (action, data) => {
+      this.emit(`calendar-event-${action}`, data);
+    };
+
+    // Event management events (canonical + backward-compatible aliases)
+    this._busUnsubscribers.push(
+      eventBus.on('event:add', data => {
+        forwardEventAction('add', data);
+      })
+    );
+    this._busUnsubscribers.push(
+      eventBus.on('event:update', data => {
+        forwardEventAction('update', data);
+      })
+    );
+    this._busUnsubscribers.push(
+      eventBus.on('event:remove', data => {
+        forwardEventAction('remove', data);
+      })
+    );
+    this._busUnsubscribers.push(
+      eventBus.on('event:added', data => {
+        forwardEventAction('add', data);
+        this.emit('calendar-event-added', data);
+      })
+    );
+    this._busUnsubscribers.push(
+      eventBus.on('event:updated', data => {
+        forwardEventAction('update', data);
+        this.emit('calendar-event-updated', data);
+      })
+    );
+    this._busUnsubscribers.push(
+      eventBus.on('event:deleted', data => {
+        forwardEventAction('remove', data);
+        this.emit('calendar-event-deleted', data);
+      })
+    );
+
+    // Date selection events
+    this._busUnsubscribers.push(
+      eventBus.on('date:selected', data => {
+        this.emit('calendar-date-select', data);
+      })
+    );
+  }
+
+  handleStateChange(newState, oldState) {
+    // If not yet rendered, do nothing (mount will handle initial render)
+    if (!this._hasRendered) {
+      return;
     }
 
-    constructor() {
-        super();
-        this.stateManager = null;
-        this.currentView = null;
-        this._hasRendered = false;  // Track if initial render is complete
-        this._cachedStyles = null;  // Cache styles to avoid recreation
-        this._busUnsubscribers = [];
+    // Check what changed
+    const viewChanged = newState.view !== oldState?.view;
+    const dateChanged = newState.currentDate?.getTime() !== oldState?.currentDate?.getTime();
+    const eventsChanged = newState.events !== oldState?.events;
+    const loadingChanged = newState.loading !== oldState?.loading;
+    const errorChanged = newState.error !== oldState?.error;
+
+    // For loading/error state changes, do full re-render (rare)
+    if (errorChanged) {
+      this.render();
+      return;
+    }
+    if (loadingChanged) {
+      this._updateLoadingState(newState.loading);
+      return;
     }
 
-    initialize() {
-        // Initialize state manager with config from attributes
-        const config = {
-            view: this.getAttribute('view') || 'month',
-            date: this.getAttribute('date') ? new Date(this.getAttribute('date')) : new Date(),
-            locale: this.getAttribute('locale') || 'en-US',
-            timeZone: this.getAttribute('timezone') || Intl.DateTimeFormat().resolvedOptions().timeZone,
-            weekStartsOn: parseInt(this.getAttribute('week-starts-on') || '0')
-        };
-
-        this.stateManager = new StateManager(config);
-
-        // Subscribe to state changes
-        this.stateManager.subscribe(this.handleStateChange.bind(this));
-
-        // Listen for events
-        this.setupEventListeners();
+    // Update local view reference if needed
+    if (viewChanged) {
+      this.currentView = newState.view;
     }
 
-    setupEventListeners() {
-        // Clean up any existing subscriptions before re-subscribing
-        this._busUnsubscribers.forEach(unsub => unsub());
-        this._busUnsubscribers = [];
+    // Targeted updates based on what changed
+    if (viewChanged) {
+      // View changed: update title, buttons, and switch view
+      this._updateTitle();
+      this._updateViewButtons();
+      this._switchView();
+    } else if (dateChanged) {
+      // Date changed: update title and re-render view
+      this._updateTitle();
+      this._updateViewContent();
+    } else if (eventsChanged) {
+      // Events changed: only re-render view content
+      this._updateViewContent();
+    }
+    // Selection changes are handled by the view internally, no action needed here
+  }
 
-        // Navigation events
-        this._busUnsubscribers.push(eventBus.on('navigation:*', (data, event) => {
-            this.emit('calendar-navigate', { action: event.split(':')[1], ...data });
-        }));
+  /**
+   * Update only the title text (no DOM recreation)
+   */
+  _updateTitle() {
+    const titleEl = this.$('.fc-title');
+    if (titleEl) {
+      const state = this.stateManager.getState();
+      titleEl.textContent = this.getTitle(state.currentDate, state.view);
+    }
+  }
 
-        // View change events
-        this._busUnsubscribers.push(eventBus.on('view:changed', (data) => {
-            this.emit('calendar-view-change', data);
-        }));
+  /**
+   * Update view button active states (no DOM recreation)
+   */
+  _updateViewButtons() {
+    const state = this.stateManager.getState();
+    this.$$('[data-view]').forEach(button => {
+      const isActive = button.dataset.view === state.view;
+      button.classList.toggle('active', isActive);
+    });
+  }
 
-        const forwardEventAction = (action, data) => {
-            this.emit(`calendar-event-${action}`, data);
-        };
+  /**
+   * Switch to a different view type
+   */
+  _switchView() {
+    const container = this.$('#calendar-view-container');
+    if (!container) return;
 
-        // Event management events (canonical + backward-compatible aliases)
-        this._busUnsubscribers.push(eventBus.on('event:add', (data) => {
-            forwardEventAction('add', data);
-        }));
-        this._busUnsubscribers.push(eventBus.on('event:update', (data) => {
-            forwardEventAction('update', data);
-        }));
-        this._busUnsubscribers.push(eventBus.on('event:remove', (data) => {
-            forwardEventAction('remove', data);
-        }));
-        this._busUnsubscribers.push(eventBus.on('event:added', (data) => {
-            forwardEventAction('add', data);
-            this.emit('calendar-event-added', data);
-        }));
-        this._busUnsubscribers.push(eventBus.on('event:updated', (data) => {
-            forwardEventAction('update', data);
-            this.emit('calendar-event-updated', data);
-        }));
-        this._busUnsubscribers.push(eventBus.on('event:deleted', (data) => {
-            forwardEventAction('remove', data);
-            this.emit('calendar-event-deleted', data);
-        }));
-
-        // Date selection events
-        this._busUnsubscribers.push(eventBus.on('date:selected', (data) => {
-            this.emit('calendar-date-select', data);
-        }));
+    // Clean up previous view
+    if (this._currentViewInstance) {
+      if (this._currentViewInstance.cleanup) {
+        this._currentViewInstance.cleanup();
+      }
     }
 
-    handleStateChange(newState, oldState) {
-        // If not yet rendered, do nothing (mount will handle initial render)
-        if (!this._hasRendered) {
-            return;
-        }
+    // Create new view using renderer classes
+    try {
+      const renderers = {
+        month: MonthViewRenderer,
+        week: WeekViewRenderer,
+        day: DayViewRenderer
+      };
 
-        // Check what changed
-        const viewChanged = newState.view !== oldState?.view;
-        const dateChanged = newState.currentDate?.getTime() !== oldState?.currentDate?.getTime();
-        const eventsChanged = newState.events !== oldState?.events;
-        const loadingChanged = newState.loading !== oldState?.loading;
-        const errorChanged = newState.error !== oldState?.error;
-
-        // For loading/error state changes, do full re-render (rare)
-        if (errorChanged) {
-            this.render();
-            return;
-        }
-        if (loadingChanged) {
-            this._updateLoadingState(newState.loading);
-            return;
-        }
-
-        // Update local view reference if needed
-        if (viewChanged) {
-            this.currentView = newState.view;
-        }
-
-        // Targeted updates based on what changed
-        if (viewChanged) {
-            // View changed: update title, buttons, and switch view
-            this._updateTitle();
-            this._updateViewButtons();
-            this._switchView();
-        } else if (dateChanged) {
-            // Date changed: update title and re-render view
-            this._updateTitle();
-            this._updateViewContent();
-        } else if (eventsChanged) {
-            // Events changed: only re-render view content
-            this._updateViewContent();
-        }
-        // Selection changes are handled by the view internally, no action needed here
+      const RendererClass = renderers[this.currentView] || MonthViewRenderer;
+      const viewRenderer = new RendererClass(container, this.stateManager);
+      viewRenderer._viewType = this.currentView;
+      this._currentViewInstance = viewRenderer;
+      viewRenderer.render();
+      // Note: No subscription - handleStateChange manages all view updates
+    } catch (err) {
+      console.error('[ForceCalendar] Error switching view:', err);
     }
+  }
 
-    /**
-     * Update only the title text (no DOM recreation)
-     */
-    _updateTitle() {
-        const titleEl = this.$('.fc-title');
-        if (titleEl) {
-            const state = this.stateManager.getState();
-            titleEl.textContent = this.getTitle(state.currentDate, state.view);
-        }
+  /**
+   * Re-render only the view content (not header)
+   */
+  _updateViewContent() {
+    if (this._currentViewInstance && this._currentViewInstance.render) {
+      this._currentViewInstance.render();
     }
+  }
 
-    /**
-     * Update view button active states (no DOM recreation)
-     */
-    _updateViewButtons() {
-        const state = this.stateManager.getState();
-        this.$$('[data-view]').forEach(button => {
-            const isActive = button.dataset.view === state.view;
-            button.classList.toggle('active', isActive);
-        });
+  /**
+   * Toggle loading overlay without rebuilding the component tree.
+   */
+  _updateLoadingState(isLoading) {
+    const loadingEl = this.$('.fc-loading');
+    const viewContainer = this.$('.fc-view-container');
+    if (loadingEl) {
+      loadingEl.style.display = isLoading ? 'flex' : 'none';
     }
-
-    /**
-     * Switch to a different view type
-     */
-    _switchView() {
-        const container = this.$('#calendar-view-container');
-        if (!container) return;
-
-        // Clean up previous view
-        if (this._currentViewInstance) {
-            if (this._currentViewInstance.cleanup) {
-                this._currentViewInstance.cleanup();
-            }
-        }
-
-        // Create new view using renderer classes
-        try {
-            const renderers = {
-                month: MonthViewRenderer,
-                week: WeekViewRenderer,
-                day: DayViewRenderer
-            };
-
-            const RendererClass = renderers[this.currentView] || MonthViewRenderer;
-            const viewRenderer = new RendererClass(container, this.stateManager);
-            viewRenderer._viewType = this.currentView;
-            this._currentViewInstance = viewRenderer;
-            viewRenderer.render();
-            // Note: No subscription - handleStateChange manages all view updates
-        } catch (err) {
-            console.error('[ForceCalendar] Error switching view:', err);
-        }
+    if (viewContainer) {
+      viewContainer.style.display = isLoading ? 'none' : 'flex';
     }
+  }
 
-    /**
-     * Re-render only the view content (not header)
-     */
-    _updateViewContent() {
-        if (this._currentViewInstance && this._currentViewInstance.render) {
-            this._currentViewInstance.render();
-        }
-    }
+  mount() {
+    this.currentView = this.stateManager.getView();
+    super.mount();
+  }
 
-    /**
-     * Toggle loading overlay without rebuilding the component tree.
-     */
-    _updateLoadingState(isLoading) {
-        const loadingEl = this.$('.fc-loading');
-        const viewContainer = this.$('.fc-view-container');
-        if (loadingEl) {
-            loadingEl.style.display = isLoading ? 'flex' : 'none';
-        }
-        if (viewContainer) {
-            viewContainer.style.display = isLoading ? 'none' : 'flex';
-        }
-    }
+  loadView(viewType) {
+    if (!viewType || this.currentView === viewType) return;
+    this.currentView = viewType;
+    this._switchView();
+    this._updateViewButtons();
+    this._updateTitle();
+  }
 
-    mount() {
-        this.currentView = this.stateManager.getView();
-        super.mount();
-    }
+  getStyles() {
+    const height = this.getAttribute('height') || '800px';
 
-    loadView(viewType) {
-        if (!viewType || this.currentView === viewType) return;
-        this.currentView = viewType;
-        this._switchView();
-        this._updateViewButtons();
-        this._updateTitle();
-    }
-
-    getStyles() {
-        const height = this.getAttribute('height') || '800px';
-
-        return `
+    return `
             ${StyleUtils.getBaseStyles()}
             ${StyleUtils.getButtonStyles()}
             ${StyleUtils.getGridStyles()}
@@ -626,25 +643,25 @@ export class ForceCalendar extends BaseComponent {
                 background: var(--fc-background);
             }
         `;
-    }
+  }
 
-    template() {
-        const state = this.stateManager.getState();
-        const { currentDate, view, loading, error } = state;
+  template() {
+    const state = this.stateManager.getState();
+    const { currentDate, view, loading, error } = state;
 
-        if (error) {
-            return `
+    if (error) {
+      return `
                 <div class="force-calendar">
                     <div class="fc-error">
                         <p><strong>Error:</strong> ${DOMUtils.escapeHTML(error.message || 'An error occurred')}</p>
                     </div>
                 </div>
             `;
-        }
+    }
 
-        const title = this.getTitle(currentDate, view);
+    const title = this.getTitle(currentDate, view);
 
-        return `
+    return `
             <div class="force-calendar">
                 <header class="fc-header">
                     <div class="fc-header-left">
@@ -691,227 +708,232 @@ export class ForceCalendar extends BaseComponent {
                 <forcecal-event-form id="event-modal"></forcecal-event-form>
             </div>
         `;
-    }
+  }
 
-    renderView() {
-        // Use a plain div container - we'll manually instantiate view classes
-        // This bypasses Locker Service's custom element restrictions
-        return '<div id="calendar-view-container"></div>';
-    }
+  renderView() {
+    // Use a plain div container - we'll manually instantiate view classes
+    // This bypasses Locker Service's custom element restrictions
+    return '<div id="calendar-view-container"></div>';
+  }
 
-    afterRender() {
-        // Manually instantiate and mount view renderer (bypasses Locker Service)
-        const container = this.$('#calendar-view-container');
+  afterRender() {
+    // Manually instantiate and mount view renderer (bypasses Locker Service)
+    const container = this.$('#calendar-view-container');
 
-        // Only create view once per view type change
-        if (container && this.stateManager && this.currentView) {
-            // Check if container actually has content (render() clears shadow DOM)
-            if (this._currentViewInstance && this._currentViewInstance._viewType === this.currentView && container.children.length > 0) {
-                return;
-            }
+    // Only create view once per view type change
+    if (container && this.stateManager && this.currentView) {
+      // Check if container actually has content (render() clears shadow DOM)
+      if (
+        this._currentViewInstance &&
+        this._currentViewInstance._viewType === this.currentView &&
+        container.children.length > 0
+      ) {
+        return;
+      }
 
-            // Clean up previous view if exists
-            if (this._currentViewInstance) {
-                if (this._currentViewInstance.cleanup) {
-                    this._currentViewInstance.cleanup();
-                }
-                if (this._viewUnsubscribe) {
-                    this._viewUnsubscribe();
-                    this._viewUnsubscribe = null;
-                }
-            }
-
-            // Create view renderer using the appropriate renderer class
-            try {
-                const renderers = {
-                    month: MonthViewRenderer,
-                    week: WeekViewRenderer,
-                    day: DayViewRenderer
-                };
-
-                const RendererClass = renderers[this.currentView] || MonthViewRenderer;
-                const viewRenderer = new RendererClass(container, this.stateManager);
-                viewRenderer._viewType = this.currentView;
-                this._currentViewInstance = viewRenderer;
-                viewRenderer.render();
-                // Note: No subscription here - handleStateChange manages all view updates
-                // via _updateViewContent(), _switchView(), or full re-render
-            } catch (err) {
-                console.error('[ForceCalendar] Error creating/rendering view:', err);
-            }
+      // Clean up previous view if exists
+      if (this._currentViewInstance) {
+        if (this._currentViewInstance.cleanup) {
+          this._currentViewInstance.cleanup();
         }
-
-        // Add event listeners for buttons using tracked addListener
-        this.$$('[data-action]').forEach(button => {
-            this.addListener(button, 'click', this.handleNavigation);
-        });
-
-        this.$$('[data-view]').forEach(button => {
-            this.addListener(button, 'click', this.handleViewChange);
-        });
-
-        // Event Modal Handling
-        const modal = this.$('#event-modal');
-        const createBtn = this.$('#create-event-btn');
-
-        if (createBtn && modal) {
-            this.addListener(createBtn, 'click', () => {
-                modal.open(new Date());
-            });
+        if (this._viewUnsubscribe) {
+          this._viewUnsubscribe();
+          this._viewUnsubscribe = null;
         }
+      }
 
-        // Listen for day clicks from the view
-        this.addListener(this.shadowRoot, 'day-click', (e) => {
-            if (modal) {
-                modal.open(e.detail.date);
-            }
-        });
-
-        // Handle event saving
-        if (modal) {
-            this.addListener(modal, 'save', (e) => {
-                const eventData = e.detail;
-                // Robust Safari support check for randomUUID
-                const id = (window.crypto && typeof window.crypto.randomUUID === 'function')
-                    ? window.crypto.randomUUID()
-                    : Math.random().toString(36).substring(2, 15);
-
-                this.stateManager.addEvent({
-                    id,
-                    ...eventData
-                });
-            });
-        }
-
-        // Mark initial render as complete for targeted updates
-        this._hasRendered = true;
-    }
-
-    /**
-     * Create a view renderer instance for the given view type
-     * Uses pure JavaScript renderer classes for Salesforce Locker Service compatibility
-     * @param {string} viewName - 'month', 'week', or 'day'
-     * @returns {BaseViewRenderer} Renderer instance
-     */
-    _createViewRenderer(viewName) {
+      // Create view renderer using the appropriate renderer class
+      try {
         const renderers = {
-            month: MonthViewRenderer,
-            week: WeekViewRenderer,
-            day: DayViewRenderer
+          month: MonthViewRenderer,
+          week: WeekViewRenderer,
+          day: DayViewRenderer
         };
 
-        const RendererClass = renderers[viewName] || MonthViewRenderer;
-        return new RendererClass(null, null); // Container and stateManager set after creation
+        const RendererClass = renderers[this.currentView] || MonthViewRenderer;
+        const viewRenderer = new RendererClass(container, this.stateManager);
+        viewRenderer._viewType = this.currentView;
+        this._currentViewInstance = viewRenderer;
+        viewRenderer.render();
+        // Note: No subscription here - handleStateChange manages all view updates
+        // via _updateViewContent(), _switchView(), or full re-render
+      } catch (err) {
+        console.error('[ForceCalendar] Error creating/rendering view:', err);
+      }
     }
 
-    handleNavigation(event) {
-        const action = event.currentTarget.dataset.action;
-        switch (action) {
-            case 'today':
-                this.stateManager.today();
-                break;
-            case 'previous':
-                this.stateManager.previous();
-                break;
-            case 'next':
-                this.stateManager.next();
-                break;
-        }
+    // Add event listeners for buttons using tracked addListener
+    this.$$('[data-action]').forEach(button => {
+      this.addListener(button, 'click', this.handleNavigation);
+    });
+
+    this.$$('[data-view]').forEach(button => {
+      this.addListener(button, 'click', this.handleViewChange);
+    });
+
+    // Event Modal Handling
+    const modal = this.$('#event-modal');
+    const createBtn = this.$('#create-event-btn');
+
+    if (createBtn && modal) {
+      this.addListener(createBtn, 'click', () => {
+        modal.open(new Date());
+      });
     }
 
-    handleViewChange(event) {
-        const view = event.currentTarget.dataset.view;
-        this.stateManager.setView(view);
+    // Listen for day clicks from the view
+    this.addListener(this.shadowRoot, 'day-click', e => {
+      if (modal) {
+        modal.open(e.detail.date);
+      }
+    });
+
+    // Handle event saving
+    if (modal) {
+      this.addListener(modal, 'save', e => {
+        const eventData = e.detail;
+        // Robust Safari support check for randomUUID
+        const id =
+          window.crypto && typeof window.crypto.randomUUID === 'function'
+            ? window.crypto.randomUUID()
+            : Math.random().toString(36).substring(2, 15);
+
+        this.stateManager.addEvent({
+          id,
+          ...eventData
+        });
+      });
     }
 
-    getTitle(date, view) {
-        const locale = this.stateManager.state.config.locale;
+    // Mark initial render as complete for targeted updates
+    this._hasRendered = true;
+  }
 
-        switch (view) {
-            case 'month':
-                return DateUtils.formatDate(date, 'month', locale);
-            case 'week':
-                const weekStart = DateUtils.startOfWeek(date);
-                const weekEnd = DateUtils.endOfWeek(date);
-                return DateUtils.formatDateRange(weekStart, weekEnd, locale);
-            case 'day':
-                return DateUtils.formatDate(date, 'long', locale);
-            default:
-                return DateUtils.formatDate(date, 'month', locale);
-        }
+  /**
+   * Create a view renderer instance for the given view type
+   * Uses pure JavaScript renderer classes for Salesforce Locker Service compatibility
+   * @param {string} viewName - 'month', 'week', or 'day'
+   * @returns {BaseViewRenderer} Renderer instance
+   */
+  _createViewRenderer(viewName) {
+    const renderers = {
+      month: MonthViewRenderer,
+      week: WeekViewRenderer,
+      day: DayViewRenderer
+    };
+
+    const RendererClass = renderers[viewName] || MonthViewRenderer;
+    return new RendererClass(null, null); // Container and stateManager set after creation
+  }
+
+  handleNavigation(event) {
+    const action = event.currentTarget.dataset.action;
+    switch (action) {
+      case 'today':
+        this.stateManager.today();
+        break;
+      case 'previous':
+        this.stateManager.previous();
+        break;
+      case 'next':
+        this.stateManager.next();
+        break;
     }
+  }
 
-    getIcon(name) {
-        const icons = {
-            'chevron-left': `
+  handleViewChange(event) {
+    const view = event.currentTarget.dataset.view;
+    this.stateManager.setView(view);
+  }
+
+  getTitle(date, view) {
+    const locale = this.stateManager.state.config.locale;
+
+    switch (view) {
+      case 'month':
+        return DateUtils.formatDate(date, 'month', locale);
+      case 'week':
+        const weekStart = DateUtils.startOfWeek(date);
+        const weekEnd = DateUtils.endOfWeek(date);
+        return DateUtils.formatDateRange(weekStart, weekEnd, locale);
+      case 'day':
+        return DateUtils.formatDate(date, 'long', locale);
+      default:
+        return DateUtils.formatDate(date, 'month', locale);
+    }
+  }
+
+  getIcon(name) {
+    const icons = {
+      'chevron-left': `
                 <svg class="fc-icon" viewBox="0 0 24 24">
                     <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
                 </svg>
             `,
-            'chevron-right': `
+      'chevron-right': `
                 <svg class="fc-icon" viewBox="0 0 24 24">
                     <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
                 </svg>
             `,
-            'calendar': `
+      calendar: `
                 <svg class="fc-icon" viewBox="0 0 24 24">
                     <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
                 </svg>
             `
-        };
+    };
 
-        return icons[name] || '';
+    return icons[name] || '';
+  }
+
+  // Public API methods
+  addEvent(event) {
+    return this.stateManager.addEvent(event);
+  }
+
+  updateEvent(eventId, updates) {
+    return this.stateManager.updateEvent(eventId, updates);
+  }
+
+  deleteEvent(eventId) {
+    return this.stateManager.deleteEvent(eventId);
+  }
+
+  getEvents() {
+    return this.stateManager.getEvents();
+  }
+
+  setView(view) {
+    this.stateManager.setView(view);
+  }
+
+  setDate(date) {
+    this.stateManager.setDate(date);
+  }
+
+  next() {
+    this.stateManager.next();
+  }
+
+  previous() {
+    this.stateManager.previous();
+  }
+
+  today() {
+    this.stateManager.today();
+  }
+
+  destroy() {
+    this._busUnsubscribers.forEach(unsub => unsub());
+    this._busUnsubscribers = [];
+
+    if (this.stateManager) {
+      this.stateManager.destroy();
     }
-
-    // Public API methods
-    addEvent(event) {
-        return this.stateManager.addEvent(event);
-    }
-
-    updateEvent(eventId, updates) {
-        return this.stateManager.updateEvent(eventId, updates);
-    }
-
-    deleteEvent(eventId) {
-        return this.stateManager.deleteEvent(eventId);
-    }
-
-    getEvents() {
-        return this.stateManager.getEvents();
-    }
-
-    setView(view) {
-        this.stateManager.setView(view);
-    }
-
-    setDate(date) {
-        this.stateManager.setDate(date);
-    }
-
-    next() {
-        this.stateManager.next();
-    }
-
-    previous() {
-        this.stateManager.previous();
-    }
-
-    today() {
-        this.stateManager.today();
-    }
-
-    destroy() {
-        this._busUnsubscribers.forEach(unsub => unsub());
-        this._busUnsubscribers = [];
-
-        if (this.stateManager) {
-            this.stateManager.destroy();
-        }
-        super.cleanup();
-    }
+    super.cleanup();
+  }
 }
 
 // Register component
 if (!customElements.get('forcecal-main')) {
-    customElements.define('forcecal-main', ForceCalendar);
+  customElements.define('forcecal-main', ForceCalendar);
 }
