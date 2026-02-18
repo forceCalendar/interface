@@ -31,7 +31,7 @@ export class DayViewRenderer extends BaseViewRenderer {
     this._scrollToCurrentTime();
   }
 
-  _renderDayView(viewData, config) {
+  _renderDayView(viewData, _config) {
     const currentDate = this.stateManager?.getState()?.currentDate || new Date();
     const dayData = this._extractDayData(viewData, currentDate);
 

@@ -31,7 +31,7 @@ export class WeekViewRenderer extends BaseViewRenderer {
     this._scrollToCurrentTime();
   }
 
-  _renderWeekView(viewData, config) {
+  _renderWeekView(viewData, _config) {
     const days = viewData.days;
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const hours = Array.from({ length: 24 }, (_, i) => i);
