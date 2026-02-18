@@ -46,12 +46,21 @@ class StateManager {
 
   /**
    * Sync state.events from Core calendar (single source of truth)
-   * This ensures state.events always matches Core's event store
+   * This ensures state.events always matches Core's event store.
+   *
+   * @param {object} options
+   * @param {boolean} options.silent  - suppress subscriber notifications
+   * @param {boolean} options.force   - always update even when IDs match
+   *                                    (required after updateEvent where IDs
+   *                                    are unchanged but content has changed)
    */
   _syncEventsFromCore(options = {}) {
+    const { force = false } = options;
     const coreEvents = this.calendar.getEvents() || [];
-    // Only update if different to avoid unnecessary re-renders
+    // Skip the update when nothing changed, unless the caller forces a sync
+    // (e.g. after updateEvent where IDs are the same but content differs)
     if (
+      force ||
       this.state.events.length !== coreEvents.length ||
       !this._eventsMatch(this.state.events, coreEvents)
     ) {
@@ -61,7 +70,9 @@ class StateManager {
   }
 
   /**
-   * Check if two event arrays have the same events (by id)
+   * Check if two event arrays have the same events by id.
+   * Only used for add/delete guards — updateEvent must pass force:true
+   * to bypass this check because IDs are unchanged after an update.
    */
   _eventsMatch(arr1, arr2) {
     if (arr1.length !== arr2.length) return false;
@@ -240,8 +251,9 @@ class StateManager {
       return null;
     }
 
-    // Sync from Core to ensure consistency (single source of truth)
-    this._syncEventsFromCore();
+    // Force sync from Core — IDs are unchanged after an update so the
+    // ID-only guard in _eventsMatch would otherwise skip the state update
+    this._syncEventsFromCore({ force: true });
     eventBus.emit('event:update', { event });
     eventBus.emit('event:updated', { event });
     return event;
