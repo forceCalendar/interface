@@ -91,21 +91,23 @@ export class ForceCalendar extends BaseComponent {
         forwardEventAction('remove', data);
       })
     );
+    // Specific lifecycle events — do NOT call forwardEventAction here; the
+    // canonical event:add/update/remove handlers above already forward the
+    // generic CustomEvent.  These handlers emit only the specific variant so
+    // consumers that care about the distinction can subscribe to it without
+    // receiving the generic event a second time.
     this._busUnsubscribers.push(
       eventBus.on('event:added', data => {
-        forwardEventAction('add', data);
         this.emit('calendar-event-added', data);
       })
     );
     this._busUnsubscribers.push(
       eventBus.on('event:updated', data => {
-        forwardEventAction('update', data);
         this.emit('calendar-event-updated', data);
       })
     );
     this._busUnsubscribers.push(
       eventBus.on('event:deleted', data => {
-        forwardEventAction('remove', data);
         this.emit('calendar-event-deleted', data);
       })
     );
