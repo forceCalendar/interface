@@ -292,11 +292,15 @@ class StateManager {
   }
 
   enrichViewData(viewData) {
+    // Shallow-copy the top-level object so we never mutate what Core returned.
+    // Core may cache and reuse the same reference across calls; mutating it
+    // in-place would corrupt its internal state.
+    const enriched = { ...viewData };
     const selectedDateString = this.state.selectedDate?.toDateString();
 
     // Strategy 1: Multi-week structure (Month view)
-    if (viewData.weeks) {
-      viewData.weeks = viewData.weeks.map(week => ({
+    if (enriched.weeks) {
+      enriched.weeks = enriched.weeks.map(week => ({
         ...week,
         days: week.days.map(day => {
           const dayDate = new Date(day.date);
@@ -310,8 +314,8 @@ class StateManager {
     }
 
     // Strategy 2: Flat days structure (Week view or list view)
-    if (viewData.days) {
-      viewData.days = viewData.days.map(day => {
+    if (enriched.days) {
+      enriched.days = enriched.days.map(day => {
         const dayDate = new Date(day.date);
         return {
           ...day,
@@ -322,13 +326,13 @@ class StateManager {
     }
 
     // Strategy 3: Single day structure (Day view)
-    if (viewData.date && !viewData.days && !viewData.weeks) {
-      const dayDate = new Date(viewData.date);
-      viewData.isSelected = dayDate.toDateString() === selectedDateString;
-      viewData.events = viewData.events || this.getEventsForDate(dayDate);
+    if (enriched.date && !enriched.days && !enriched.weeks) {
+      const dayDate = new Date(enriched.date);
+      enriched.isSelected = dayDate.toDateString() === selectedDateString;
+      enriched.events = enriched.events || this.getEventsForDate(dayDate);
     }
 
-    return viewData;
+    return enriched;
   }
 
   // Selection management
