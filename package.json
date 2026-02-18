@@ -1,6 +1,6 @@
 {
   "name": "@forcecalendar/interface",
-  "version": "1.0.27",
+  "version": "1.0.28",
   "type": "module",
   "description": "Official interface layer for forceCalendar Core - Enterprise calendar components",
   "main": "dist/force-calendar-interface.umd.js",
