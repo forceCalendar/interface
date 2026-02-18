@@ -67,7 +67,7 @@ export class BaseComponent extends HTMLElement {
     return this._state;
   }
 
-  stateChanged(oldState, newState) {
+  stateChanged(_oldState, _newState) {
     // Override in child classes to handle state changes
   }
 
@@ -82,7 +82,7 @@ export class BaseComponent extends HTMLElement {
     return this._props.get(key);
   }
 
-  propChanged(key, oldValue, newValue) {
+  propChanged(_key, _oldValue, _newValue) {
     // Override in child classes to handle prop changes
   }
 
