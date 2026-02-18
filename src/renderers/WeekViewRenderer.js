@@ -143,8 +143,7 @@ export class WeekViewRenderer extends BaseViewRenderer {
 
             const date = new Date(dayEl.dataset.date);
             const rect = dayEl.getBoundingClientRect();
-            const scrollContainer = this.container.querySelector('#week-scroll-container');
-            const y = e.clientY - rect.top + (scrollContainer ? scrollContainer.scrollTop : 0);
+            const y = e.clientY - rect.top;
 
             // Calculate time from click position
             date.setHours(Math.floor(y / this.hourHeight), Math.floor((y % this.hourHeight) / (this.hourHeight / 60)), 0, 0);
