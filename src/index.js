@@ -24,9 +24,3 @@ export { DayViewRenderer } from './renderers/DayViewRenderer.js';
 // Components
 import './components/ForceCalendar.js';
 export { ForceCalendar } from './components/ForceCalendar.js';
-
-// Auto-register main component if in browser environment
-if (typeof window !== 'undefined' && typeof customElements !== 'undefined') {
-  // The ForceCalendar component self-registers
-  console.log('Force Calendar Interface loading...');
-}
