@@ -15,11 +15,15 @@ export default defineConfig({
       }
     },
     rollupOptions: {
-      // Externalize dependencies that shouldn't be bundled
-      external: [],
+      // @forcecalendar/core is a peer dependency — consumers supply it.
+      // Bundling it would cause it to be loaded twice in projects that also
+      // import core directly, bloating every consumer's bundle unnecessarily.
+      external: ['@forcecalendar/core'],
       output: {
-        // Global variable name for UMD build
-        globals: {}
+        // Global variable name for UMD builds (script-tag / CDN consumers)
+        globals: {
+          '@forcecalendar/core': 'ForceCalendarCore'
+        }
       }
     },
     // Generate sourcemaps for debugging

@@ -43,10 +43,11 @@
     "url": "https://github.com/forceCalendar/interface/issues"
   },
   "homepage": "https://interface.forcecalendar.org",
-  "dependencies": {
-    "@forcecalendar/core": "^2.1.7"
+  "peerDependencies": {
+    "@forcecalendar/core": ">=2.0.0"
   },
   "devDependencies": {
+    "@forcecalendar/core": "^2.1.18",
     "@babel/core": "^7.28.5",
     "@babel/preset-env": "^7.28.5",
     "babel-jest": "^30.2.0",
