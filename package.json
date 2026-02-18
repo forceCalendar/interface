@@ -17,6 +17,11 @@
     "dist",
     "src"
   ],
+  "sideEffects": [
+    "./src/index.js",
+    "./src/components/ForceCalendar.js",
+    "./src/components/EventForm.js"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
