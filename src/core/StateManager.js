@@ -69,7 +69,11 @@ class StateManager {
 
     // State management
     getState() {
-        return { ...this.state };
+        return {
+            ...this.state,
+            config: { ...this.state.config },
+            events: [...this.state.events]
+        };
     }
 
     setState(updates, options = {}) {
