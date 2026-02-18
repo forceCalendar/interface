@@ -347,7 +347,10 @@ export class EventForm extends BaseComponent {
       this.endInput.value = this.formatDateForInput(this._formData.end);
       this.updateColorSelection();
 
-      // Focus trapping
+      // Clean up previous focus trap before creating a new one
+      if (this._cleanupFocusTrap) {
+        this._cleanupFocusTrap();
+      }
       this._cleanupFocusTrap = DOMUtils.trapFocus(this.modalContent);
     }
   }
