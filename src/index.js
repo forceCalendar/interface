@@ -27,6 +27,6 @@ export { ForceCalendar } from './components/ForceCalendar.js';
 
 // Auto-register main component if in browser environment
 if (typeof window !== 'undefined' && typeof customElements !== 'undefined') {
-    // The ForceCalendar component self-registers
-    console.log('Force Calendar Interface loading...');
+  // The ForceCalendar component self-registers
+  console.log('Force Calendar Interface loading...');
 }

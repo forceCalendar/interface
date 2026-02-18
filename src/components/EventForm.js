@@ -3,47 +3,47 @@ import { StyleUtils } from '../utils/StyleUtils.js';
 import { DOMUtils } from '../utils/DOMUtils.js';
 
 export class EventForm extends BaseComponent {
-    constructor() {
-        super();
-        this._isVisible = false;
-        this._cleanupFocusTrap = null;
-        this.config = {
-            title: 'New Event',
-            defaultDuration: 60, // minutes
-            colors: [
-                { color: '#2563EB', label: 'Blue' },
-                { color: '#10B981', label: 'Green' },
-                { color: '#F59E0B', label: 'Amber' },
-                { color: '#EF4444', label: 'Red' },
-                { color: '#8B5CF6', label: 'Purple' },
-                { color: '#6B7280', label: 'Gray' }
-            ]
-        };
-        this._formData = {
-            title: '',
-            start: new Date(),
-            end: new Date(),
-            allDay: false,
-            color: this.config.colors[0].color
-        };
-    }
+  constructor() {
+    super();
+    this._isVisible = false;
+    this._cleanupFocusTrap = null;
+    this.config = {
+      title: 'New Event',
+      defaultDuration: 60, // minutes
+      colors: [
+        { color: '#2563EB', label: 'Blue' },
+        { color: '#10B981', label: 'Green' },
+        { color: '#F59E0B', label: 'Amber' },
+        { color: '#EF4444', label: 'Red' },
+        { color: '#8B5CF6', label: 'Purple' },
+        { color: '#6B7280', label: 'Gray' }
+      ]
+    };
+    this._formData = {
+      title: '',
+      start: new Date(),
+      end: new Date(),
+      allDay: false,
+      color: this.config.colors[0].color
+    };
+  }
 
-    static get observedAttributes() {
-        return ['open'];
-    }
+  static get observedAttributes() {
+    return ['open'];
+  }
 
-    attributeChangedCallback(name, oldValue, newValue) {
-        if (name === 'open') {
-            if (newValue !== null) {
-                this.open();
-            } else {
-                this.close();
-            }
-        }
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (name === 'open') {
+      if (newValue !== null) {
+        this.open();
+      } else {
+        this.close();
+      }
     }
+  }
 
-    getStyles() {
-        return `
+  getStyles() {
+    return `
             ${StyleUtils.getBaseStyles()}
             ${StyleUtils.getButtonStyles()}
 
@@ -214,10 +214,10 @@ export class EventForm extends BaseComponent {
                 border-color: var(--fc-danger-color);
             }
         `;
-    }
+  }
 
-    template() {
-        return `
+  template() {
+    return `
             <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modal-title">
                 <header class="modal-header">
                     <h3 class="modal-title" id="modal-title">${this.config.title}</h3>
@@ -250,7 +250,9 @@ export class EventForm extends BaseComponent {
                     <div class="form-group">
                         <label id="color-label">Color</label>
                         <div class="color-options" id="color-picker" role="radiogroup" aria-labelledby="color-label">
-                            ${this.config.colors.map(c => `
+                            ${this.config.colors
+                              .map(
+                                c => `
                                 <button type="button" 
                                         class="color-btn ${c.color === this._formData.color ? 'selected' : ''}" 
                                         style="background-color: ${c.color}" 
@@ -259,7 +261,9 @@ export class EventForm extends BaseComponent {
                                         aria-label="${c.label}"
                                         aria-checked="${c.color === this._formData.color ? 'true' : 'false'}"
                                         role="radio"></button>
-                            `).join('')}
+                            `
+                              )
+                              .join('')}
                         </div>
                     </div>
                 </div>
@@ -270,155 +274,155 @@ export class EventForm extends BaseComponent {
                 </footer>
             </div>
         `;
-    }
+  }
 
-    afterRender() {
-        // Bind elements
-        this.modalContent = this.$('.modal-content');
-        this.titleInput = this.$('#event-title');
-        this.startInput = this.$('#event-start');
-        this.endInput = this.$('#event-end');
-        this.colorContainer = this.$('#color-picker');
-        
-        this.titleGroup = this.$('#title-group');
-        this.endGroup = this.$('#end-group');
+  afterRender() {
+    // Bind elements
+    this.modalContent = this.$('.modal-content');
+    this.titleInput = this.$('#event-title');
+    this.startInput = this.$('#event-start');
+    this.endInput = this.$('#event-end');
+    this.colorContainer = this.$('#color-picker');
 
-        // Event Listeners using addListener for automatic cleanup
-        this.addListener(this.$('#close-x'), 'click', () => this.close());
-        this.addListener(this.$('#cancel-btn'), 'click', () => this.close());
-        this.addListener(this.$('#save-btn'), 'click', () => this.save());
+    this.titleGroup = this.$('#title-group');
+    this.endGroup = this.$('#end-group');
 
-        this.colorContainer.querySelectorAll('.color-btn').forEach(btn => {
-            this.addListener(btn, 'click', (e) => {
-                this._formData.color = e.currentTarget.dataset.color;
-                this.updateColorSelection();
-            });
-        });
+    // Event Listeners using addListener for automatic cleanup
+    this.addListener(this.$('#close-x'), 'click', () => this.close());
+    this.addListener(this.$('#cancel-btn'), 'click', () => this.close());
+    this.addListener(this.$('#save-btn'), 'click', () => this.save());
 
-        // Close on backdrop click
-        this.addListener(this, 'click', (e) => {
-            if (e.target === this) this.close();
-        });
+    this.colorContainer.querySelectorAll('.color-btn').forEach(btn => {
+      this.addListener(btn, 'click', e => {
+        this._formData.color = e.currentTarget.dataset.color;
+        this.updateColorSelection();
+      });
+    });
 
-        // Close on Escape key - only add once to prevent memory leaks
-        if (!this._keydownListenerAdded) {
-            this._handleKeyDown = (e) => {
-                if (e.key === 'Escape' && this.hasAttribute('open')) {
-                    this.close();
-                }
-            };
-            window.addEventListener('keydown', this._handleKeyDown);
-            this._keydownListenerAdded = true;
+    // Close on backdrop click
+    this.addListener(this, 'click', e => {
+      if (e.target === this) this.close();
+    });
+
+    // Close on Escape key - only add once to prevent memory leaks
+    if (!this._keydownListenerAdded) {
+      this._handleKeyDown = e => {
+        if (e.key === 'Escape' && this.hasAttribute('open')) {
+          this.close();
         }
+      };
+      window.addEventListener('keydown', this._handleKeyDown);
+      this._keydownListenerAdded = true;
+    }
+  }
+
+  updateColorSelection() {
+    const buttons = this.colorContainer.querySelectorAll('.color-btn');
+    buttons.forEach(btn => {
+      const isSelected = btn.dataset.color === this._formData.color;
+      btn.classList.toggle('selected', isSelected);
+      btn.setAttribute('aria-checked', isSelected ? 'true' : 'false');
+    });
+  }
+
+  open(initialDate = new Date()) {
+    if (!this.hasAttribute('open')) {
+      this.setAttribute('open', '');
     }
 
-    updateColorSelection() {
-        const buttons = this.colorContainer.querySelectorAll('.color-btn');
-        buttons.forEach(btn => {
-            const isSelected = btn.dataset.color === this._formData.color;
-            btn.classList.toggle('selected', isSelected);
-            btn.setAttribute('aria-checked', isSelected ? 'true' : 'false');
-        });
+    // Reset errors
+    this.titleGroup.classList.remove('has-error');
+    this.endGroup.classList.remove('has-error');
+
+    // Initialize form data
+    this._formData.start = initialDate;
+    this._formData.end = new Date(initialDate.getTime() + this.config.defaultDuration * 60 * 1000);
+    this._formData.title = '';
+    this._formData.color = this.config.colors[0].color;
+
+    // Update inputs
+    if (this.startInput) {
+      this.titleInput.value = '';
+      this.startInput.value = this.formatDateForInput(this._formData.start);
+      this.endInput.value = this.formatDateForInput(this._formData.end);
+      this.updateColorSelection();
+
+      // Focus trapping
+      this._cleanupFocusTrap = DOMUtils.trapFocus(this.modalContent);
+    }
+  }
+
+  close() {
+    this.removeAttribute('open');
+    if (this._cleanupFocusTrap) {
+      this._cleanupFocusTrap();
+      this._cleanupFocusTrap = null;
+    }
+  }
+
+  validate() {
+    let isValid = true;
+
+    // Reset errors
+    this.titleGroup.classList.remove('has-error');
+    this.endGroup.classList.remove('has-error');
+
+    // Check title
+    if (!this.titleInput.value.trim()) {
+      this.titleGroup.classList.add('has-error');
+      isValid = false;
     }
 
-    open(initialDate = new Date()) {
-        if (!this.hasAttribute('open')) {
-            this.setAttribute('open', '');
-        }
-        
-        // Reset errors
-        this.titleGroup.classList.remove('has-error');
-        this.endGroup.classList.remove('has-error');
-
-        // Initialize form data
-        this._formData.start = initialDate;
-        this._formData.end = new Date(initialDate.getTime() + this.config.defaultDuration * 60 * 1000);
-        this._formData.title = '';
-        this._formData.color = this.config.colors[0].color;
-        
-        // Update inputs
-        if (this.startInput) {
-            this.titleInput.value = '';
-            this.startInput.value = this.formatDateForInput(this._formData.start);
-            this.endInput.value = this.formatDateForInput(this._formData.end);
-            this.updateColorSelection();
-            
-            // Focus trapping
-            this._cleanupFocusTrap = DOMUtils.trapFocus(this.modalContent);
-        }
+    // Check date range
+    const start = new Date(this.startInput.value);
+    const end = new Date(this.endInput.value);
+    if (end <= start) {
+      this.endGroup.classList.add('has-error');
+      isValid = false;
     }
 
-    close() {
-        this.removeAttribute('open');
-        if (this._cleanupFocusTrap) {
-            this._cleanupFocusTrap();
-            this._cleanupFocusTrap = null;
-        }
+    return isValid;
+  }
+
+  save() {
+    if (!this.validate()) return;
+
+    const event = {
+      title: this.titleInput.value.trim(),
+      start: new Date(this.startInput.value),
+      end: new Date(this.endInput.value),
+      backgroundColor: this._formData.color
+    };
+
+    this.emit('save', event);
+    this.close();
+  }
+
+  formatDateForInput(date) {
+    // Handle local date string for datetime-local input
+    const pad = num => String(num).padStart(2, '0');
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1);
+    const day = pad(date.getDate());
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
+
+  unmount() {
+    if (this._cleanupFocusTrap) {
+      this._cleanupFocusTrap();
     }
-
-    validate() {
-        let isValid = true;
-        
-        // Reset errors
-        this.titleGroup.classList.remove('has-error');
-        this.endGroup.classList.remove('has-error');
-
-        // Check title
-        if (!this.titleInput.value.trim()) {
-            this.titleGroup.classList.add('has-error');
-            isValid = false;
-        }
-
-        // Check date range
-        const start = new Date(this.startInput.value);
-        const end = new Date(this.endInput.value);
-        if (end <= start) {
-            this.endGroup.classList.add('has-error');
-            isValid = false;
-        }
-
-        return isValid;
+    // Clean up window listener
+    if (this._handleKeyDown) {
+      window.removeEventListener('keydown', this._handleKeyDown);
+      this._handleKeyDown = null;
+      this._keydownListenerAdded = false;
     }
-
-    save() {
-        if (!this.validate()) return;
-
-        const event = {
-            title: this.titleInput.value.trim(),
-            start: new Date(this.startInput.value),
-            end: new Date(this.endInput.value),
-            backgroundColor: this._formData.color
-        };
-
-        this.emit('save', event);
-        this.close();
-    }
-
-    formatDateForInput(date) {
-        // Handle local date string for datetime-local input
-        const pad = (num) => String(num).padStart(2, '0');
-        const year = date.getFullYear();
-        const month = pad(date.getMonth() + 1);
-        const day = pad(date.getDate());
-        const hours = pad(date.getHours());
-        const minutes = pad(date.getMinutes());
-        
-        return `${year}-${month}-${day}T${hours}:${minutes}`;
-    }
-
-    unmount() {
-        if (this._cleanupFocusTrap) {
-            this._cleanupFocusTrap();
-        }
-        // Clean up window listener
-        if (this._handleKeyDown) {
-            window.removeEventListener('keydown', this._handleKeyDown);
-            this._handleKeyDown = null;
-            this._keydownListenerAdded = false;
-        }
-    }
+  }
 }
 
 if (!customElements.get('forcecal-event-form')) {
-    customElements.define('forcecal-event-form', EventForm);
+  customElements.define('forcecal-event-form', EventForm);
 }
