@@ -6,7 +6,6 @@
  */
 
 import { DOMUtils } from '../utils/DOMUtils.js';
-import { DateUtils } from '../utils/DateUtils.js';
 import { StyleUtils } from '../utils/StyleUtils.js';
 
 export class BaseViewRenderer {
@@ -57,7 +56,7 @@ export class BaseViewRenderer {
    * @returns {string}
    */
   escapeHTML(str) {
-    if (str == null) return '';
+    if (str === null || str === undefined) return '';
     return DOMUtils.escapeHTML(String(str));
   }
 

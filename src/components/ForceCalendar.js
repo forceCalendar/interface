@@ -16,8 +16,8 @@ import { MonthViewRenderer } from '../renderers/MonthViewRenderer.js';
 import { WeekViewRenderer } from '../renderers/WeekViewRenderer.js';
 import { DayViewRenderer } from '../renderers/DayViewRenderer.js';
 
-// Import EventForm component
-import { EventForm } from './EventForm.js';
+// Import EventForm component (registers custom element as side effect)
+import './EventForm.js';
 
 export class ForceCalendar extends BaseComponent {
   static get observedAttributes() {
