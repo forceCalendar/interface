@@ -168,7 +168,10 @@ export class DayViewRenderer extends BaseViewRenderer {
                 ${isToday ? this.renderNowIndicator() : ''}
 
                 <!-- Timed events -->
-                ${timedEvents.map(evt => this.renderTimedEvent(evt, { compact: false })).join('')}
+                ${(() => {
+                  const layout = this.computeOverlapLayout(timedEvents);
+                  return timedEvents.map(evt => this.renderTimedEvent(evt, { compact: false, overlapLayout: layout })).join('');
+                })()}
             </div>
         `;
   }
