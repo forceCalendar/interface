@@ -115,40 +115,16 @@ export class BaseViewRenderer {
   }
 
   /**
-   * Get contrasting text color for a background color
-   * Uses WCAG luminance formula
+   * Get contrasting text color for a background color.
+   * Delegates to StyleUtils.getContrastColor() as the single implementation.
    * @param {string} bgColor - Hex color string
-   * @returns {string} 'black' or 'white'
+   * @returns {string} '#000000' or '#FFFFFF'
    */
   getContrastingTextColor(bgColor) {
-    if (!bgColor || typeof bgColor !== 'string') return 'white';
-
-    const color = bgColor.charAt(0) === '#' ? bgColor.substring(1) : bgColor;
-
-    if (!/^[0-9A-Fa-f]{3}$|^[0-9A-Fa-f]{6}$/.test(color)) {
+    if (!bgColor || typeof bgColor !== 'string' || bgColor.charAt(0) !== '#') {
       return 'white';
     }
-
-    const fullColor =
-      color.length === 3 ? color[0] + color[0] + color[1] + color[1] + color[2] + color[2] : color;
-
-    const r = parseInt(fullColor.substring(0, 2), 16);
-    const g = parseInt(fullColor.substring(2, 4), 16);
-    const b = parseInt(fullColor.substring(4, 6), 16);
-
-    if (isNaN(r) || isNaN(g) || isNaN(b)) {
-      return 'white';
-    }
-
-    const uicolors = [r / 255, g / 255, b / 255];
-    const c = uicolors.map(col => {
-      if (col <= 0.03928) {
-        return col / 12.92;
-      }
-      return Math.pow((col + 0.055) / 1.055, 2.4);
-    });
-    const L = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
-    return L > 0.179 ? 'black' : 'white';
+    return StyleUtils.getContrastColor(bgColor);
   }
 
   /**
