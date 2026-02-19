@@ -18,7 +18,7 @@ export class MonthViewRenderer extends BaseViewRenderer {
     const viewData = this.stateManager.getViewData();
     if (!viewData || !viewData.weeks) {
       this.container.innerHTML =
-        '<div style="padding: 20px; text-align: center; color: #666;">No data available for month view.</div>';
+        '<div style="padding: 20px; text-align: center; color: var(--fc-text-secondary);">No data available for month view.</div>';
       return;
     }
 
@@ -34,9 +34,9 @@ export class MonthViewRenderer extends BaseViewRenderer {
     const dayNames = this._getDayNames(weekStartsOn);
 
     let html = `
-            <div class="fc-month-view" style="display: flex; flex-direction: column; height: 100%; min-height: 400px; background: #fff; border: 1px solid #e5e7eb;">
-                <div class="fc-month-header" style="display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
-                    ${dayNames.map(d => `<div class="fc-month-header-cell" style="padding: 12px 8px; text-align: center; font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase;">${d}</div>`).join('')}
+            <div class="fc-month-view" style="display: flex; flex-direction: column; height: 100%; min-height: 400px; background: var(--fc-background); border: 1px solid var(--fc-border-color);">
+                <div class="fc-month-header" style="display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid var(--fc-border-color); background: var(--fc-background-alt);">
+                    ${dayNames.map(d => `<div class="fc-month-header-cell" style="padding: 12px 8px; text-align: center; font-size: 11px; font-weight: 600; color: var(--fc-text-light); text-transform: uppercase;">${d}</div>`).join('')}
                 </div>
                 <div class="fc-month-body" style="display: flex; flex-direction: column; flex: 1;">
         `;
@@ -75,10 +75,10 @@ export class MonthViewRenderer extends BaseViewRenderer {
     const isOtherMonth = !day.isCurrentMonth;
     const isToday = day.isToday;
 
-    const dayBg = isOtherMonth ? '#f3f4f6' : '#fff';
-    const dayNumColor = isOtherMonth ? '#9ca3af' : '#111827';
+    const dayBg = isOtherMonth ? 'var(--fc-background-hover)' : 'var(--fc-background)';
+    const dayNumColor = isOtherMonth ? 'var(--fc-text-light)' : 'var(--fc-text-color)';
     const todayStyle = isToday
-      ? 'background: #2563eb; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;'
+      ? 'background: var(--fc-primary-color); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;'
       : '';
 
     const events = day.events || [];
@@ -87,13 +87,13 @@ export class MonthViewRenderer extends BaseViewRenderer {
 
     return `
             <div class="fc-month-day" data-date="${day.date}"
-                 style="background: ${dayBg}; border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; padding: 4px; min-height: 80px; cursor: pointer; display: flex; flex-direction: column;">
+                 style="background: ${dayBg}; border-right: 1px solid var(--fc-border-color); border-bottom: 1px solid var(--fc-border-color); padding: 4px; min-height: 80px; cursor: pointer; display: flex; flex-direction: column;">
                 <div class="fc-day-number" style="font-size: 13px; font-weight: 500; color: ${dayNumColor}; padding: 2px 4px; margin-bottom: 4px; ${todayStyle}">
                     ${day.dayOfMonth}
                 </div>
                 <div class="fc-day-events" style="display: flex; flex-direction: column; gap: 2px; flex: 1; overflow: hidden;">
                     ${visibleEvents.map(evt => this._renderEvent(evt)).join('')}
-                    ${moreCount > 0 ? `<div class="fc-more-events" style="font-size: 10px; color: #6b7280; padding: 2px 4px; font-weight: 500;">+${moreCount} more</div>` : ''}
+                    ${moreCount > 0 ? `<div class="fc-more-events" style="font-size: 10px; color: var(--fc-text-light); padding: 2px 4px; font-weight: 500;">+${moreCount} more</div>` : ''}
                 </div>
             </div>
         `;

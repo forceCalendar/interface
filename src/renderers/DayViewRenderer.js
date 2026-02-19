@@ -19,7 +19,7 @@ export class DayViewRenderer extends BaseViewRenderer {
     const viewData = this.stateManager.getViewData();
     if (!viewData) {
       this.container.innerHTML =
-        '<div style="padding: 20px; text-align: center; color: #666;">No data available for day view.</div>';
+        '<div style="padding: 20px; text-align: center; color: var(--fc-text-secondary);">No data available for day view.</div>';
       return;
     }
 
@@ -37,14 +37,14 @@ export class DayViewRenderer extends BaseViewRenderer {
     const dayData = this._extractDayData(viewData, currentDate);
 
     if (!dayData) {
-      return '<div style="padding: 20px; text-align: center; color: #666;">No data available for day view.</div>';
+      return '<div style="padding: 20px; text-align: center; color: var(--fc-text-secondary);">No data available for day view.</div>';
     }
 
     const { dayDate, dayName, isToday, allDayEvents, timedEvents } = dayData;
     const hours = Array.from({ length: 24 }, (_, i) => i);
 
     return `
-            <div class="fc-day-view" style="display: flex; flex-direction: column; height: 100%; background: #fff; overflow: hidden;">
+            <div class="fc-day-view" style="display: flex; flex-direction: column; height: 100%; background: var(--fc-background); overflow: hidden;">
                 ${this._renderHeader(dayDate, dayName, isToday)}
                 ${this._renderAllDayRow(allDayEvents, dayDate)}
                 ${this._renderTimeGrid(timedEvents, isToday, dayDate, hours)}
@@ -96,13 +96,13 @@ export class DayViewRenderer extends BaseViewRenderer {
 
   _renderHeader(dayDate, dayName, isToday) {
     return `
-            <div class="fc-day-header" style="display: grid; grid-template-columns: 60px 1fr; border-bottom: 1px solid #e5e7eb; background: #f9fafb; flex-shrink: 0;">
-                <div style="border-right: 1px solid #e5e7eb;"></div>
+            <div class="fc-day-header" style="display: grid; grid-template-columns: 60px 1fr; border-bottom: 1px solid var(--fc-border-color); background: var(--fc-background-alt); flex-shrink: 0;">
+                <div style="border-right: 1px solid var(--fc-border-color);"></div>
                 <div style="padding: 16px 24px;">
-                    <div style="font-size: 12px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.1em;">
+                    <div style="font-size: 12px; font-weight: 700; color: var(--fc-text-light); text-transform: uppercase; letter-spacing: 0.1em;">
                         ${dayName}
                     </div>
-                    <div style="font-size: 24px; font-weight: 600; margin-top: 4px; ${isToday ? 'color: #dc2626;' : 'color: #111827;'}">
+                    <div style="font-size: 24px; font-weight: 600; margin-top: 4px; ${isToday ? 'color: var(--fc-danger-color);' : 'color: var(--fc-text-color);'}">
                         ${dayDate.getDate()}
                     </div>
                 </div>
@@ -112,8 +112,8 @@ export class DayViewRenderer extends BaseViewRenderer {
 
   _renderAllDayRow(allDayEvents, dayDate) {
     return `
-            <div class="fc-all-day-row" style="display: grid; grid-template-columns: 60px 1fr; border-bottom: 1px solid #e5e7eb; background: #fafafa; min-height: 36px; flex-shrink: 0;">
-                <div style="font-size: 9px; color: #6b7280; display: flex; align-items: center; justify-content: center; border-right: 1px solid #e5e7eb; text-transform: uppercase; font-weight: 700;">
+            <div class="fc-all-day-row" style="display: grid; grid-template-columns: 60px 1fr; border-bottom: 1px solid var(--fc-border-color); background: var(--fc-background-alt); min-height: 36px; flex-shrink: 0;">
+                <div style="font-size: 9px; color: var(--fc-text-light); display: flex; align-items: center; justify-content: center; border-right: 1px solid var(--fc-border-color); text-transform: uppercase; font-weight: 700;">
                     All day
                 </div>
                 <div class="fc-all-day-cell" data-date="${dayDate.toISOString()}" style="padding: 6px 12px; display: flex; flex-wrap: wrap; gap: 4px;">
@@ -145,11 +145,11 @@ export class DayViewRenderer extends BaseViewRenderer {
 
   _renderTimeGutter(hours) {
     return `
-            <div class="fc-time-gutter" style="border-right: 1px solid #e5e7eb; background: #fafafa;">
+            <div class="fc-time-gutter" style="border-right: 1px solid var(--fc-border-color); background: var(--fc-background-alt);">
                 ${hours
                   .map(
                     h => `
-                    <div style="height: ${this.hourHeight}px; font-size: 11px; color: #6b7280; text-align: right; padding-right: 12px; font-weight: 500;">
+                    <div style="height: ${this.hourHeight}px; font-size: 11px; color: var(--fc-text-light); text-align: right; padding-right: 12px; font-weight: 500;">
                         ${h === 0 ? '' : this.formatHour(h)}
                     </div>
                 `
@@ -163,7 +163,7 @@ export class DayViewRenderer extends BaseViewRenderer {
     return `
             <div class="fc-day-column" data-date="${dayDate.toISOString()}" style="position: relative; cursor: pointer;">
                 <!-- Hour grid lines -->
-                ${hours.map(() => `<div style="height: ${this.hourHeight}px; border-bottom: 1px solid #f3f4f6;"></div>`).join('')}
+                ${hours.map(() => `<div style="height: ${this.hourHeight}px; border-bottom: 1px solid var(--fc-background-hover);"></div>`).join('')}
 
                 <!-- Now indicator for today -->
                 ${isToday ? this.renderNowIndicator() : ''}
