@@ -180,14 +180,15 @@ export class DayViewRenderer extends BaseViewRenderer {
       if (e.target.closest('.fc-event')) return;
 
       const date = new Date(dayEl.dataset.date);
-      const rect = dayEl.getBoundingClientRect();
       const scrollContainer = this.container.querySelector('#day-scroll-container');
-      const y = e.clientY - rect.top;
+      const gridTop = dayEl.offsetTop;
+      const y = e.clientY - dayEl.getBoundingClientRect().top + (scrollContainer ? scrollContainer.scrollTop : 0) - gridTop;
 
-      // Calculate time from click position
+      // Calculate time from click position within the 1440px time grid
+      const clampedY = Math.max(0, Math.min(y + gridTop, this.totalHeight));
       date.setHours(
-        Math.floor(y / this.hourHeight),
-        Math.floor((y % this.hourHeight) / (this.hourHeight / 60)),
+        Math.floor(clampedY / this.hourHeight),
+        Math.floor((clampedY % this.hourHeight) / (this.hourHeight / 60)),
         0,
         0
       );
