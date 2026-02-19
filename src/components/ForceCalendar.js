@@ -854,10 +854,11 @@ export class ForceCalendar extends BaseComponent {
     switch (view) {
       case 'month':
         return DateUtils.formatDate(date, 'month', locale);
-      case 'week':
+      case 'week': {
         const weekStart = DateUtils.startOfWeek(date);
         const weekEnd = DateUtils.endOfWeek(date);
         return DateUtils.formatDateRange(weekStart, weekEnd, locale);
+      }
       case 'day':
         return DateUtils.formatDate(date, 'long', locale);
       default:
