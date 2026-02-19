@@ -222,6 +222,7 @@ export class BaseViewRenderer {
     const startMinutes = start.getHours() * 60 + start.getMinutes();
     const durationMinutes = Math.max((end - start) / (1000 * 60), compact ? 20 : 30);
     const color = this.getEventColor(event);
+    const textColor = this.getContrastingTextColor(color);
 
     const padding = compact ? '4px 8px' : '8px 12px';
     const fontSize = compact ? '11px' : '13px';
@@ -247,7 +248,7 @@ export class BaseViewRenderer {
                         left: ${leftPx}; width: ${widthCalc};
                         background-color: ${color}; border-radius: ${borderRadius};
                         padding: ${padding}; font-size: ${fontSize};
-                        font-weight: 500; color: white; overflow: hidden;
+                        font-weight: 500; color: ${textColor}; overflow: hidden;
                         box-shadow: 0 1px 2px rgba(0,0,0,0.1);
                         cursor: pointer; z-index: 5;">
                 <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
