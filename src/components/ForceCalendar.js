@@ -6,7 +6,6 @@
 
 import { BaseComponent } from '../core/BaseComponent.js';
 import StateManager from '../core/StateManager.js';
-import eventBus from '../core/EventBus.js';
 import { StyleUtils } from '../utils/StyleUtils.js';
 import { DateUtils } from '../utils/DateUtils.js';
 import { DOMUtils } from '../utils/DOMUtils.js';
@@ -57,16 +56,18 @@ export class ForceCalendar extends BaseComponent {
     this._busUnsubscribers.forEach(unsub => unsub());
     this._busUnsubscribers = [];
 
+    const bus = this.stateManager.eventBus;
+
     // Navigation events
     this._busUnsubscribers.push(
-      eventBus.on('navigation:*', (data, event) => {
+      bus.on('navigation:*', (data, event) => {
         this.emit('calendar-navigate', { action: event.split(':')[1], ...data });
       })
     );
 
     // View change events
     this._busUnsubscribers.push(
-      eventBus.on('view:changed', data => {
+      bus.on('view:changed', data => {
         this.emit('calendar-view-change', data);
       })
     );
@@ -77,17 +78,17 @@ export class ForceCalendar extends BaseComponent {
 
     // Event management events (canonical + backward-compatible aliases)
     this._busUnsubscribers.push(
-      eventBus.on('event:add', data => {
+      bus.on('event:add', data => {
         forwardEventAction('add', data);
       })
     );
     this._busUnsubscribers.push(
-      eventBus.on('event:update', data => {
+      bus.on('event:update', data => {
         forwardEventAction('update', data);
       })
     );
     this._busUnsubscribers.push(
-      eventBus.on('event:remove', data => {
+      bus.on('event:remove', data => {
         forwardEventAction('remove', data);
       })
     );
@@ -97,24 +98,24 @@ export class ForceCalendar extends BaseComponent {
     // consumers that care about the distinction can subscribe to it without
     // receiving the generic event a second time.
     this._busUnsubscribers.push(
-      eventBus.on('event:added', data => {
+      bus.on('event:added', data => {
         this.emit('calendar-event-added', data);
       })
     );
     this._busUnsubscribers.push(
-      eventBus.on('event:updated', data => {
+      bus.on('event:updated', data => {
         this.emit('calendar-event-updated', data);
       })
     );
     this._busUnsubscribers.push(
-      eventBus.on('event:deleted', data => {
+      bus.on('event:deleted', data => {
         this.emit('calendar-event-deleted', data);
       })
     );
 
     // Date selection events
     this._busUnsubscribers.push(
-      eventBus.on('date:selected', data => {
+      bus.on('date:selected', data => {
         this.emit('calendar-date-select', data);
       })
     );
