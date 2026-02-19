@@ -849,7 +849,7 @@ export class ForceCalendar extends BaseComponent {
   }
 
   getTitle(date, view) {
-    const locale = this.stateManager.state.config.locale;
+    const locale = this.stateManager.getState().config.locale;
 
     switch (view) {
       case 'month':
