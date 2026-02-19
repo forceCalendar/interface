@@ -31,6 +31,7 @@ export class WeekViewRenderer extends BaseViewRenderer {
     this.container.innerHTML = html;
     this._attachEventHandlers();
     this._scrollToCurrentTime();
+    this.startNowIndicatorTimer();
   }
 
   _renderWeekView(viewData, _config) {

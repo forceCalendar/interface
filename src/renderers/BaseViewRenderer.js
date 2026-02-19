@@ -18,6 +18,7 @@ export class BaseViewRenderer {
     this.stateManager = stateManager;
     this._listeners = [];
     this._scrolled = false;
+    this._nowIndicatorTimer = null;
   }
 
   /**
@@ -36,6 +37,10 @@ export class BaseViewRenderer {
       element.removeEventListener(event, handler);
     });
     this._listeners = [];
+    if (this._nowIndicatorTimer) {
+      clearInterval(this._nowIndicatorTimer);
+      this._nowIndicatorTimer = null;
+    }
   }
 
   /**
@@ -135,6 +140,23 @@ export class BaseViewRenderer {
     const now = new Date();
     const minutes = now.getHours() * 60 + now.getMinutes();
     return `<div class="fc-now-indicator" style="position: absolute; left: 0; right: 0; top: ${minutes}px; height: 2px; background: var(--fc-danger-color); z-index: 15; pointer-events: none;"></div>`;
+  }
+
+  /**
+   * Start a timer that updates the now indicator position every 60 seconds.
+   * Call this after render() in day/week views that show a now indicator.
+   */
+  startNowIndicatorTimer() {
+    if (this._nowIndicatorTimer) {
+      clearInterval(this._nowIndicatorTimer);
+    }
+    this._nowIndicatorTimer = setInterval(() => {
+      const indicator = this.container.querySelector('.fc-now-indicator');
+      if (indicator) {
+        const now = new Date();
+        indicator.style.top = `${now.getHours() * 60 + now.getMinutes()}px`;
+      }
+    }, 60000);
   }
 
   /**
