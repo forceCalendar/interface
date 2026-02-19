@@ -158,7 +158,7 @@ export class BaseViewRenderer {
   renderNowIndicator() {
     const now = new Date();
     const minutes = now.getHours() * 60 + now.getMinutes();
-    return `<div class="fc-now-indicator" style="position: absolute; left: 0; right: 0; top: ${minutes}px; height: 2px; background: #dc2626; z-index: 15; pointer-events: none;"></div>`;
+    return `<div class="fc-now-indicator" style="position: absolute; left: 0; right: 0; top: ${minutes}px; height: 2px; background: var(--fc-danger-color); z-index: 15; pointer-events: none;"></div>`;
   }
 
   /**

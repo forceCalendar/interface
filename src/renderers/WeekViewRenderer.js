@@ -19,7 +19,7 @@ export class WeekViewRenderer extends BaseViewRenderer {
     const viewData = this.stateManager.getViewData();
     if (!viewData || !viewData.days || viewData.days.length === 0) {
       this.container.innerHTML =
-        '<div style="padding: 20px; text-align: center; color: #666;">No data available for week view.</div>';
+        '<div style="padding: 20px; text-align: center; color: var(--fc-text-secondary);">No data available for week view.</div>';
       return;
     }
 
@@ -52,7 +52,7 @@ export class WeekViewRenderer extends BaseViewRenderer {
     });
 
     return `
-            <div class="fc-week-view" style="display: flex; flex-direction: column; height: 100%; background: #fff; overflow: hidden;">
+            <div class="fc-week-view" style="display: flex; flex-direction: column; height: 100%; background: var(--fc-background); overflow: hidden;">
                 ${this._renderHeader(processedDays)}
                 ${this._renderAllDayRow(processedDays)}
                 ${this._renderTimeGrid(processedDays, hours)}
@@ -62,16 +62,16 @@ export class WeekViewRenderer extends BaseViewRenderer {
 
   _renderHeader(days) {
     return `
-            <div class="fc-week-header" style="display: grid; grid-template-columns: 60px repeat(7, 1fr); border-bottom: 1px solid #e5e7eb; background: #f9fafb; flex-shrink: 0;">
-                <div style="border-right: 1px solid #e5e7eb;"></div>
+            <div class="fc-week-header" style="display: grid; grid-template-columns: 60px repeat(7, 1fr); border-bottom: 1px solid var(--fc-border-color); background: var(--fc-background-alt); flex-shrink: 0;">
+                <div style="border-right: 1px solid var(--fc-border-color);"></div>
                 ${days
                   .map(
                     day => `
-                    <div style="padding: 12px 8px; text-align: center; border-right: 1px solid #e5e7eb;">
-                        <div style="font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.1em;">
+                    <div style="padding: 12px 8px; text-align: center; border-right: 1px solid var(--fc-border-color);">
+                        <div style="font-size: 10px; font-weight: 700; color: var(--fc-text-light); text-transform: uppercase; letter-spacing: 0.1em;">
                             ${day.dayName}
                         </div>
-                        <div style="font-size: 16px; font-weight: 500; margin-top: 4px; ${day.isToday ? 'background: #dc2626; color: white; border-radius: 50%; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;' : 'color: #111827;'}">
+                        <div style="font-size: 16px; font-weight: 500; margin-top: 4px; ${day.isToday ? 'background: var(--fc-danger-color); color: white; border-radius: 50%; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;' : 'color: var(--fc-text-color);'}">
                             ${day.dayOfMonth}
                         </div>
                     </div>
@@ -84,14 +84,14 @@ export class WeekViewRenderer extends BaseViewRenderer {
 
   _renderAllDayRow(days) {
     return `
-            <div class="fc-all-day-row" style="display: grid; grid-template-columns: 60px repeat(7, 1fr); border-bottom: 1px solid #e5e7eb; background: #fafafa; min-height: 32px; flex-shrink: 0;">
-                <div style="font-size: 9px; color: #6b7280; display: flex; align-items: center; justify-content: center; border-right: 1px solid #e5e7eb; text-transform: uppercase; font-weight: 700;">
+            <div class="fc-all-day-row" style="display: grid; grid-template-columns: 60px repeat(7, 1fr); border-bottom: 1px solid var(--fc-border-color); background: var(--fc-background-alt); min-height: 32px; flex-shrink: 0;">
+                <div style="font-size: 9px; color: var(--fc-text-light); display: flex; align-items: center; justify-content: center; border-right: 1px solid var(--fc-border-color); text-transform: uppercase; font-weight: 700;">
                     All day
                 </div>
                 ${days
                   .map(
                     day => `
-                    <div class="fc-all-day-cell" data-date="${day.date.toISOString()}" style="border-right: 1px solid #e5e7eb; padding: 4px; display: flex; flex-direction: column; gap: 2px;">
+                    <div class="fc-all-day-cell" data-date="${day.date.toISOString()}" style="border-right: 1px solid var(--fc-border-color); padding: 4px; display: flex; flex-direction: column; gap: 2px;">
                         ${day.allDayEvents
                           .map(
                             evt => `
@@ -123,11 +123,11 @@ export class WeekViewRenderer extends BaseViewRenderer {
 
   _renderTimeGutter(hours) {
     return `
-            <div class="fc-time-gutter" style="border-right: 1px solid #e5e7eb; background: #fafafa;">
+            <div class="fc-time-gutter" style="border-right: 1px solid var(--fc-border-color); background: var(--fc-background-alt);">
                 ${hours
                   .map(
                     h => `
-                    <div style="height: ${this.hourHeight}px; font-size: 10px; color: #6b7280; text-align: right; padding-right: 8px; font-weight: 500;">
+                    <div style="height: ${this.hourHeight}px; font-size: 10px; color: var(--fc-text-light); text-align: right; padding-right: 8px; font-weight: 500;">
                         ${h === 0 ? '' : this.formatHour(h)}
                     </div>
                 `
@@ -139,9 +139,9 @@ export class WeekViewRenderer extends BaseViewRenderer {
 
   _renderDayColumn(day, hours) {
     return `
-            <div class="fc-week-day-column" data-date="${day.date.toISOString()}" style="border-right: 1px solid #e5e7eb; position: relative; cursor: pointer;">
+            <div class="fc-week-day-column" data-date="${day.date.toISOString()}" style="border-right: 1px solid var(--fc-border-color); position: relative; cursor: pointer;">
                 <!-- Hour grid lines -->
-                ${hours.map(() => `<div style="height: ${this.hourHeight}px; border-bottom: 1px solid #f3f4f6;"></div>`).join('')}
+                ${hours.map(() => `<div style="height: ${this.hourHeight}px; border-bottom: 1px solid var(--fc-background-hover);"></div>`).join('')}
 
                 <!-- Now indicator for today -->
                 ${day.isToday ? this.renderNowIndicator() : ''}
