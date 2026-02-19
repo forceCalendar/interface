@@ -24,6 +24,7 @@ export class DayViewRenderer extends BaseViewRenderer {
     }
 
     this.cleanup();
+    this._scrolled = false;
     const config = this.stateManager.getState().config;
     const html = this._renderDayView(viewData, config);
     this.container.innerHTML = html;
