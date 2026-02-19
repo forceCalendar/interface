@@ -432,6 +432,10 @@ class StateManager {
       this._subscriberIds.clear();
       this._subscriberIds = null;
     }
+    if (this.eventBus) {
+      this.eventBus.clear();
+      this.eventBus = null;
+    }
     this.state = null;
     this.calendar = null;
   }

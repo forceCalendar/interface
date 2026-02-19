@@ -45,8 +45,8 @@ export class ForceCalendar extends BaseComponent {
 
     this.stateManager = new StateManager(config);
 
-    // Subscribe to state changes
-    this.stateManager.subscribe(this.handleStateChange.bind(this));
+    // Subscribe to state changes (store unsubscribe for cleanup)
+    this._stateUnsubscribe = this.stateManager.subscribe(this.handleStateChange.bind(this));
 
     // Listen for events
     this.setupEventListeners();
@@ -924,9 +924,24 @@ export class ForceCalendar extends BaseComponent {
     this.stateManager.today();
   }
 
+  unmount() {
+    // Called by disconnectedCallback — clean up all subscriptions
+    this.destroy();
+  }
+
   destroy() {
     this._busUnsubscribers.forEach(unsub => unsub());
     this._busUnsubscribers = [];
+
+    if (this._stateUnsubscribe) {
+      this._stateUnsubscribe();
+      this._stateUnsubscribe = null;
+    }
+
+    if (this._currentViewInstance && this._currentViewInstance.cleanup) {
+      this._currentViewInstance.cleanup();
+      this._currentViewInstance = null;
+    }
 
     if (this.stateManager) {
       this.stateManager.destroy();
