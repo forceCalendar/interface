@@ -34,7 +34,6 @@ export class ForceCalendar extends BaseComponent {
     this.stateManager = null;
     this.currentView = null;
     this._hasRendered = false; // Track if initial render is complete
-    this._cachedStyles = null; // Cache styles to avoid recreation
     this._busUnsubscribers = [];
   }
 
