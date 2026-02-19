@@ -6,10 +6,14 @@
  */
 
 import { Calendar } from '@forcecalendar/core';
-import eventBus from './EventBus.js';
+import { EventBus } from './EventBus.js';
 
 class StateManager {
   constructor(config = {}) {
+    // Each StateManager gets its own EventBus to prevent cross-instance
+    // contamination when multiple calendars exist on the same page.
+    this.eventBus = new EventBus();
+
     // Initialize Core Calendar instance
     this.calendar = new Calendar({
       view: config.view || 'month',
@@ -162,7 +166,7 @@ class StateManager {
     const changedKeys = Object.keys(newState).filter(key => oldState[key] !== newState[key]);
 
     changedKeys.forEach(key => {
-      eventBus.emit(`state:${key}:changed`, {
+      this.eventBus.emit(`state:${key}:changed`, {
         oldValue: oldState[key],
         newValue: newState[key],
         state: newState
@@ -170,7 +174,7 @@ class StateManager {
     });
 
     if (changedKeys.length > 0) {
-      eventBus.emit('state:changed', { oldState, newState, changedKeys });
+      this.eventBus.emit('state:changed', { oldState, newState, changedKeys });
     }
   }
 
@@ -178,7 +182,7 @@ class StateManager {
   setView(view) {
     this.calendar.setView(view);
     this.setState({ view });
-    eventBus.emit('view:changed', { view });
+    this.eventBus.emit('view:changed', { view });
   }
 
   getView() {
@@ -188,7 +192,7 @@ class StateManager {
   setDate(date) {
     this.calendar.goToDate(date);
     this.setState({ currentDate: this.calendar.getCurrentDate() });
-    eventBus.emit('date:changed', { date: this.state.currentDate });
+    this.eventBus.emit('date:changed', { date: this.state.currentDate });
   }
 
   getCurrentDate() {
@@ -199,25 +203,25 @@ class StateManager {
   next() {
     this.calendar.next();
     this.setState({ currentDate: this.calendar.getCurrentDate() });
-    eventBus.emit('navigation:next', { date: this.state.currentDate });
+    this.eventBus.emit('navigation:next', { date: this.state.currentDate });
   }
 
   previous() {
     this.calendar.previous();
     this.setState({ currentDate: this.calendar.getCurrentDate() });
-    eventBus.emit('navigation:previous', { date: this.state.currentDate });
+    this.eventBus.emit('navigation:previous', { date: this.state.currentDate });
   }
 
   today() {
     this.calendar.today();
     this.setState({ currentDate: this.calendar.getCurrentDate() });
-    eventBus.emit('navigation:today', { date: this.state.currentDate });
+    this.eventBus.emit('navigation:today', { date: this.state.currentDate });
   }
 
   goToDate(date) {
     this.calendar.goToDate(date);
     this.setState({ currentDate: this.calendar.getCurrentDate() });
-    eventBus.emit('navigation:goto', { date: this.state.currentDate });
+    this.eventBus.emit('navigation:goto', { date: this.state.currentDate });
   }
 
   // Event management
@@ -225,13 +229,13 @@ class StateManager {
     const addedEvent = this.calendar.addEvent(event);
     if (!addedEvent) {
       console.error('Failed to add event to calendar');
-      eventBus.emit('event:error', { action: 'add', event, error: 'Failed to add event' });
+      this.eventBus.emit('event:error', { action: 'add', event, error: 'Failed to add event' });
       return null;
     }
     // Sync from Core to ensure consistency (single source of truth)
     this._syncEventsFromCore();
-    eventBus.emit('event:add', { event: addedEvent });
-    eventBus.emit('event:added', { event: addedEvent });
+    this.eventBus.emit('event:add', { event: addedEvent });
+    this.eventBus.emit('event:added', { event: addedEvent });
     return addedEvent;
   }
 
@@ -242,7 +246,7 @@ class StateManager {
     const event = this.calendar.updateEvent(eventId, updates);
     if (!event) {
       console.error(`Failed to update event: ${eventId}`);
-      eventBus.emit('event:error', {
+      this.eventBus.emit('event:error', {
         action: 'update',
         eventId,
         updates,
@@ -254,8 +258,8 @@ class StateManager {
     // Force sync from Core — IDs are unchanged after an update so the
     // ID-only guard in _eventsMatch would otherwise skip the state update
     this._syncEventsFromCore({ force: true });
-    eventBus.emit('event:update', { event });
-    eventBus.emit('event:updated', { event });
+    this.eventBus.emit('event:update', { event });
+    this.eventBus.emit('event:updated', { event });
     return event;
   }
 
@@ -266,13 +270,13 @@ class StateManager {
     const deleted = this.calendar.removeEvent(eventId);
     if (!deleted) {
       console.error(`Failed to delete event: ${eventId}`);
-      eventBus.emit('event:error', { action: 'delete', eventId, error: 'Event not found' });
+      this.eventBus.emit('event:error', { action: 'delete', eventId, error: 'Event not found' });
       return false;
     }
     // Sync from Core to ensure consistency (single source of truth)
     this._syncEventsFromCore();
-    eventBus.emit('event:remove', { eventId });
-    eventBus.emit('event:deleted', { eventId });
+    this.eventBus.emit('event:remove', { eventId });
+    this.eventBus.emit('event:deleted', { eventId });
     return true;
   }
 
@@ -350,7 +354,7 @@ class StateManager {
   // Selection management
   selectEvent(event) {
     this.setState({ selectedEvent: event });
-    eventBus.emit('event:selected', { event });
+    this.eventBus.emit('event:selected', { event });
   }
 
   selectEventById(eventId) {
@@ -362,17 +366,17 @@ class StateManager {
 
   deselectEvent() {
     this.setState({ selectedEvent: null });
-    eventBus.emit('event:deselected', {});
+    this.eventBus.emit('event:deselected', {});
   }
 
   selectDate(date) {
     this.setState({ selectedDate: date });
-    eventBus.emit('date:selected', { date });
+    this.eventBus.emit('date:selected', { date });
   }
 
   deselectDate() {
     this.setState({ selectedDate: null });
-    eventBus.emit('date:deselected', {});
+    this.eventBus.emit('date:deselected', {});
   }
 
   // Utility methods
@@ -401,7 +405,7 @@ class StateManager {
   setError(error) {
     this.setState({ error });
     if (error) {
-      eventBus.emit('error', { error });
+      this.eventBus.emit('error', { error });
     }
   }
 
