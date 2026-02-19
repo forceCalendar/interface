@@ -120,14 +120,11 @@ class EventBus {
   }
 
   /**
-   * Emit an event
+   * Emit an event synchronously
    * @param {string} eventName - Event name
    * @param {*} data - Event data
-   * @returns {Promise} Resolves when all handlers complete
    */
-  async emit(eventName, data) {
-    const promises = [];
-
+  emit(eventName, data) {
     // Handle direct subscriptions
     if (this.events.has(eventName)) {
       const handlers = [...this.events.get(eventName)];
@@ -140,10 +137,7 @@ class EventBus {
         }
 
         try {
-          const result = handler(data, eventName);
-          if (result instanceof Promise) {
-            promises.push(result);
-          }
+          handler(data, eventName);
         } catch (error) {
           console.error(`Error in event handler for ${eventName}:`, error);
         }
@@ -161,10 +155,7 @@ class EventBus {
         }
 
         try {
-          const result = handler(data, eventName);
-          if (result instanceof Promise) {
-            promises.push(result);
-          }
+          handler(data, eventName);
         } catch (error) {
           console.error(`Error in wildcard handler for ${eventName}:`, error);
         }
@@ -172,8 +163,6 @@ class EventBus {
     }
     // Remove one-time handlers after iteration
     toRemove.forEach(sub => this.wildcardHandlers.delete(sub));
-
-    return Promise.all(promises);
   }
 
   /**
