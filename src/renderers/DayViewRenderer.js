@@ -5,6 +5,7 @@
  */
 
 import { BaseViewRenderer } from './BaseViewRenderer.js';
+import { DateUtils } from '../utils/DateUtils.js';
 
 export class DayViewRenderer extends BaseViewRenderer {
   constructor(container, stateManager) {
@@ -54,12 +55,12 @@ export class DayViewRenderer extends BaseViewRenderer {
 
   _extractDayData(viewData, currentDate) {
     let dayDate, dayName, isToday, allDayEvents, timedEvents;
-    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const locale = this.stateManager.getState().config.locale || 'en-US';
 
     if (viewData.type === 'day' && viewData.date) {
       // Core day view structure
       dayDate = new Date(viewData.date);
-      dayName = viewData.dayName || dayNames[dayDate.getDay()];
+      dayName = viewData.dayName || DateUtils.getDayName(dayDate.getDay(), locale);
       isToday = viewData.isToday !== undefined ? viewData.isToday : this.isToday(dayDate);
       allDayEvents = viewData.allDayEvents || [];
 
@@ -82,7 +83,7 @@ export class DayViewRenderer extends BaseViewRenderer {
       const dayDataItem =
         viewData.days.find(d => this.isSameDay(new Date(d.date), currentDate)) || viewData.days[0];
       dayDate = new Date(dayDataItem.date);
-      dayName = dayNames[dayDate.getDay()];
+      dayName = DateUtils.getDayName(dayDate.getDay(), locale);
       isToday = this.isToday(dayDate);
       const events = dayDataItem.events || [];
       allDayEvents = events.filter(e => e.allDay);

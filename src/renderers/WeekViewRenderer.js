@@ -5,6 +5,7 @@
  */
 
 import { BaseViewRenderer } from './BaseViewRenderer.js';
+import { DateUtils } from '../utils/DateUtils.js';
 
 export class WeekViewRenderer extends BaseViewRenderer {
   constructor(container, stateManager) {
@@ -34,7 +35,7 @@ export class WeekViewRenderer extends BaseViewRenderer {
 
   _renderWeekView(viewData, _config) {
     const days = viewData.days;
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const locale = this.stateManager.getState().config.locale || 'en-US';
     const hours = Array.from({ length: 24 }, (_, i) => i);
 
     // Process days to categorize events
@@ -44,7 +45,7 @@ export class WeekViewRenderer extends BaseViewRenderer {
       return {
         ...day,
         date: dayDate,
-        dayName: dayNames[dayDate.getDay()],
+        dayName: DateUtils.getDayAbbreviation(dayDate.getDay(), locale),
         dayOfMonth: dayDate.getDate(),
         isToday: this.isToday(dayDate),
         timedEvents: events.filter(e => !e.allDay),
