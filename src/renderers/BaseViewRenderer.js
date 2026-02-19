@@ -157,7 +157,9 @@ export class BaseViewRenderer {
     });
 
     // Sort by start time, then by longer duration first
-    entries.sort((a, b) => a.startMin - b.startMin || (b.endMin - b.startMin) - (a.endMin - a.startMin));
+    entries.sort(
+      (a, b) => a.startMin - b.startMin || b.endMin - b.startMin - (a.endMin - a.startMin)
+    );
 
     // Assign columns greedily
     const columns = []; // each column tracks the end time of its last event

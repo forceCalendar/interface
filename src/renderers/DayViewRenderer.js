@@ -172,7 +172,11 @@ export class DayViewRenderer extends BaseViewRenderer {
                 <!-- Timed events -->
                 ${(() => {
                   const layout = this.computeOverlapLayout(timedEvents);
-                  return timedEvents.map(evt => this.renderTimedEvent(evt, { compact: false, overlapLayout: layout })).join('');
+                  return timedEvents
+                    .map(evt =>
+                      this.renderTimedEvent(evt, { compact: false, overlapLayout: layout })
+                    )
+                    .join('');
                 })()}
             </div>
         `;
@@ -187,7 +191,11 @@ export class DayViewRenderer extends BaseViewRenderer {
       const date = new Date(dayEl.dataset.date);
       const scrollContainer = this.container.querySelector('#day-scroll-container');
       const gridTop = dayEl.offsetTop;
-      const y = e.clientY - dayEl.getBoundingClientRect().top + (scrollContainer ? scrollContainer.scrollTop : 0) - gridTop;
+      const y =
+        e.clientY -
+        dayEl.getBoundingClientRect().top +
+        (scrollContainer ? scrollContainer.scrollTop : 0) -
+        gridTop;
 
       // Calculate time from click position within the 1440px time grid
       const clampedY = Math.max(0, Math.min(y + gridTop, this.totalHeight));
