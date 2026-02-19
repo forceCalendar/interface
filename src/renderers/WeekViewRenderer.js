@@ -147,7 +147,10 @@ export class WeekViewRenderer extends BaseViewRenderer {
                 ${day.isToday ? this.renderNowIndicator() : ''}
 
                 <!-- Timed events -->
-                ${day.timedEvents.map(evt => this.renderTimedEvent(evt, { compact: true })).join('')}
+                ${(() => {
+                  const layout = this.computeOverlapLayout(day.timedEvents);
+                  return day.timedEvents.map(evt => this.renderTimedEvent(evt, { compact: true, overlapLayout: layout })).join('');
+                })()}
             </div>
         `;
   }

@@ -162,13 +162,85 @@ export class BaseViewRenderer {
   }
 
   /**
+   * Compute overlap layout columns for a list of timed events.
+   * Returns a Map of event.id -> { column, totalColumns }.
+   * Uses a greedy left-to-right column packing algorithm.
+   * @param {Array} events - Array of event objects with start/end dates
+   * @returns {Map<string, {column: number, totalColumns: number}>}
+   */
+  computeOverlapLayout(events) {
+    if (!events || events.length === 0) return new Map();
+
+    // Convert to sortable entries with minute ranges
+    const entries = events.map(evt => {
+      const start = new Date(evt.start);
+      const end = new Date(evt.end);
+      const startMin = start.getHours() * 60 + start.getMinutes();
+      const endMin = Math.max(startMin + 1, end.getHours() * 60 + end.getMinutes());
+      return { id: evt.id, startMin, endMin };
+    });
+
+    // Sort by start time, then by longer duration first
+    entries.sort((a, b) => a.startMin - b.startMin || (b.endMin - b.startMin) - (a.endMin - a.startMin));
+
+    // Assign columns greedily
+    const columns = []; // each column tracks the end time of its last event
+    const layout = new Map();
+
+    for (const entry of entries) {
+      let placed = false;
+      for (let col = 0; col < columns.length; col++) {
+        if (columns[col] <= entry.startMin) {
+          columns[col] = entry.endMin;
+          layout.set(entry.id, { column: col, totalColumns: 0 });
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        layout.set(entry.id, { column: columns.length, totalColumns: 0 });
+        columns.push(entry.endMin);
+      }
+    }
+
+    // Determine the max overlapping columns for each cluster of overlapping events
+    // Walk through entries and find connected groups
+    const groups = [];
+    let currentGroup = [];
+    let groupEnd = 0;
+
+    for (const entry of entries) {
+      if (currentGroup.length === 0 || entry.startMin < groupEnd) {
+        currentGroup.push(entry);
+        groupEnd = Math.max(groupEnd, entry.endMin);
+      } else {
+        groups.push(currentGroup);
+        currentGroup = [entry];
+        groupEnd = entry.endMin;
+      }
+    }
+    if (currentGroup.length > 0) groups.push(currentGroup);
+
+    for (const group of groups) {
+      const maxCol = Math.max(...group.map(e => layout.get(e.id).column)) + 1;
+      for (const entry of group) {
+        layout.get(entry.id).totalColumns = maxCol;
+      }
+    }
+
+    return layout;
+  }
+
+  /**
    * Render a timed event block
    * @param {Object} event - Event object
    * @param {Object} options - Rendering options
+   * @param {Object} options.compact - Use compact layout
+   * @param {Object} options.overlapLayout - Map from computeOverlapLayout()
    * @returns {string} HTML string
    */
   renderTimedEvent(event, options = {}) {
-    const { compact = true } = options;
+    const { compact = true, overlapLayout = null } = options;
     const start = new Date(event.start);
     const end = new Date(event.end);
     const startMinutes = start.getHours() * 60 + start.getMinutes();
@@ -177,14 +249,26 @@ export class BaseViewRenderer {
 
     const padding = compact ? '4px 8px' : '8px 12px';
     const fontSize = compact ? '11px' : '13px';
-    const margin = compact ? '2px' : '12px';
-    const rightMargin = compact ? '2px' : '24px';
+    const baseMargin = compact ? 2 : 12;
+    const rightPad = compact ? 2 : 24;
     const borderRadius = compact ? '4px' : '6px';
+
+    // Compute left/width based on overlap columns
+    let leftPx, widthCalc;
+    if (overlapLayout && overlapLayout.has(event.id)) {
+      const { column, totalColumns } = overlapLayout.get(event.id);
+      const colWidth = `(100% - ${baseMargin + rightPad}px)`;
+      leftPx = `calc(${baseMargin}px + ${column} * ${colWidth} / ${totalColumns})`;
+      widthCalc = `calc(${colWidth} / ${totalColumns})`;
+    } else {
+      leftPx = `${baseMargin}px`;
+      widthCalc = `calc(100% - ${baseMargin + rightPad}px)`;
+    }
 
     return `
             <div class="fc-event fc-timed-event" data-event-id="${this.escapeHTML(event.id)}"
                  style="position: absolute; top: ${startMinutes}px; height: ${durationMinutes}px;
-                        left: ${margin}; right: ${rightMargin};
+                        left: ${leftPx}; width: ${widthCalc};
                         background-color: ${color}; border-radius: ${borderRadius};
                         padding: ${padding}; font-size: ${fontSize};
                         font-weight: 500; color: white; overflow: hidden;
