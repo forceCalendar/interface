@@ -19,6 +19,12 @@ import { DayViewRenderer } from '../renderers/DayViewRenderer.js';
 import './EventForm.js';
 
 export class ForceCalendar extends BaseComponent {
+  static RENDERERS = {
+    month: MonthViewRenderer,
+    week: WeekViewRenderer,
+    day: DayViewRenderer
+  };
+
   static get observedAttributes() {
     return ['view', 'date', 'locale', 'timezone', 'week-starts-on', 'height'];
   }
@@ -204,13 +210,7 @@ export class ForceCalendar extends BaseComponent {
 
     // Create new view using renderer classes
     try {
-      const renderers = {
-        month: MonthViewRenderer,
-        week: WeekViewRenderer,
-        day: DayViewRenderer
-      };
-
-      const RendererClass = renderers[this.currentView] || MonthViewRenderer;
+      const RendererClass = ForceCalendar.RENDERERS[this.currentView] || MonthViewRenderer;
       const viewRenderer = new RendererClass(container, this.stateManager);
       viewRenderer._viewType = this.currentView;
       this._currentViewInstance = viewRenderer;
@@ -747,13 +747,7 @@ export class ForceCalendar extends BaseComponent {
 
       // Create view renderer using the appropriate renderer class
       try {
-        const renderers = {
-          month: MonthViewRenderer,
-          week: WeekViewRenderer,
-          day: DayViewRenderer
-        };
-
-        const RendererClass = renderers[this.currentView] || MonthViewRenderer;
+        const RendererClass = ForceCalendar.RENDERERS[this.currentView] || MonthViewRenderer;
         const viewRenderer = new RendererClass(container, this.stateManager);
         viewRenderer._viewType = this.currentView;
         this._currentViewInstance = viewRenderer;
@@ -810,23 +804,6 @@ export class ForceCalendar extends BaseComponent {
 
     // Mark initial render as complete for targeted updates
     this._hasRendered = true;
-  }
-
-  /**
-   * Create a view renderer instance for the given view type
-   * Uses pure JavaScript renderer classes for Salesforce Locker Service compatibility
-   * @param {string} viewName - 'month', 'week', or 'day'
-   * @returns {BaseViewRenderer} Renderer instance
-   */
-  _createViewRenderer(viewName) {
-    const renderers = {
-      month: MonthViewRenderer,
-      week: WeekViewRenderer,
-      day: DayViewRenderer
-    };
-
-    const RendererClass = renderers[viewName] || MonthViewRenderer;
-    return new RendererClass(null, null); // Container and stateManager set after creation
   }
 
   handleNavigation(event) {
