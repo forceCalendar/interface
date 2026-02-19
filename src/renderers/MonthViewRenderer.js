@@ -5,6 +5,7 @@
  */
 
 import { BaseViewRenderer } from './BaseViewRenderer.js';
+import { DateUtils } from '../utils/DateUtils.js';
 
 export class MonthViewRenderer extends BaseViewRenderer {
   constructor(container, stateManager) {
@@ -50,11 +51,11 @@ export class MonthViewRenderer extends BaseViewRenderer {
   }
 
   _getDayNames(weekStartsOn) {
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const locale = this.stateManager.getState().config.locale || 'en-US';
     const dayNames = [];
     for (let i = 0; i < 7; i++) {
       const dayIndex = (weekStartsOn + i) % 7;
-      dayNames.push(days[dayIndex]);
+      dayNames.push(DateUtils.getDayAbbreviation(dayIndex, locale));
     }
     return dayNames;
   }

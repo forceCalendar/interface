@@ -148,6 +148,14 @@ export class DateUtils extends CoreDateUtils {
   }
 
   /**
+   * Get full day name
+   */
+  static getDayName(dayIndex, locale = 'en-US') {
+    const date = new Date(2024, 0, 7 + dayIndex); // Jan 7, 2024 is a Sunday
+    return new Intl.DateTimeFormat(locale, { weekday: 'long' }).format(date);
+  }
+
+  /**
    * Get month name
    */
   static getMonthName(monthIndex, format = 'long', locale = 'en-US') {
