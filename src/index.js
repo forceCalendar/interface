@@ -22,5 +22,4 @@ export { WeekViewRenderer } from './renderers/WeekViewRenderer.js';
 export { DayViewRenderer } from './renderers/DayViewRenderer.js';
 
 // Components
-import './components/ForceCalendar.js';
 export { ForceCalendar } from './components/ForceCalendar.js';
