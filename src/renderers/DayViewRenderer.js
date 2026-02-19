@@ -30,6 +30,7 @@ export class DayViewRenderer extends BaseViewRenderer {
     this.container.innerHTML = html;
     this._attachEventHandlers();
     this._scrollToCurrentTime();
+    this.startNowIndicatorTimer();
   }
 
   _renderDayView(viewData, _config) {
