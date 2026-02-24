@@ -138,13 +138,15 @@ export class BaseComponent extends HTMLElement {
     // First render: create style element and content wrapper
     if (!this._styleEl) {
       this._styleEl = document.createElement('style');
-      this._styleEl.textContent = this.getBaseStyles() + '\n' + this.getStyles();
       this.shadowRoot.appendChild(this._styleEl);
       this._contentWrapper = document.createElement('div');
       this._contentWrapper.setAttribute('id', 'fc-root');
       this._contentWrapper.style.display = 'contents';
       this.shadowRoot.appendChild(this._contentWrapper);
     }
+
+    // Update styles on every render in case getStyles() depends on state
+    this._styleEl.textContent = this.getBaseStyles() + '\n' + this.getStyles();
 
     // Save scroll positions and focused element before DOM replacement
     const scrollPositions = this._saveScrollPositions();
@@ -182,7 +184,7 @@ export class BaseComponent extends HTMLElement {
   _restoreScrollPositions(positions) {
     if (!this._contentWrapper || positions.size === 0) return;
     positions.forEach((pos, id) => {
-      const el = this._contentWrapper.querySelector('#' + id);
+      const el = this._contentWrapper.querySelector(`[id="${CSS.escape(id)}"]`);
       if (el) {
         el.scrollTop = pos.top;
         el.scrollLeft = pos.left;
@@ -197,11 +199,16 @@ export class BaseComponent extends HTMLElement {
   _getActiveElementSelector() {
     const active = this.shadowRoot.activeElement;
     if (!active || active === this._contentWrapper) return null;
-    if (active.id) return '#' + active.id;
+    if (active.id) return `[id="${CSS.escape(active.id)}"]`;
+    // Prefer data attributes over className to avoid invalid selectors
+    if (active.dataset && active.dataset.action) {
+      return `[data-action="${CSS.escape(active.dataset.action)}"]`;
+    }
+    if (active.dataset && active.dataset.view) {
+      return `[data-view="${CSS.escape(active.dataset.view)}"]`;
+    }
     if (active.tagName) {
-      const tag = active.tagName.toLowerCase();
-      const className = active.className ? '.' + active.className.split(/\s+/).join('.') : '';
-      return tag + className;
+      return active.tagName.toLowerCase();
     }
     return null;
   }
