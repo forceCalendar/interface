@@ -71,10 +71,10 @@ export class WeekViewRenderer extends BaseViewRenderer {
                     day => `
                     <div style="padding: 12px 8px; text-align: center; border-right: 1px solid var(--fc-border-color);">
                         <div style="font-size: 10px; font-weight: 700; color: var(--fc-text-light); text-transform: uppercase; letter-spacing: 0.1em;">
-                            ${day.dayName}
+                            ${this.escapeHTML(day.dayName)}
                         </div>
                         <div style="font-size: 16px; font-weight: 500; margin-top: 4px; ${day.isToday ? 'background: var(--fc-danger-color); color: white; border-radius: 50%; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;' : 'color: var(--fc-text-color);'}">
-                            ${day.dayOfMonth}
+                            ${this.escapeHTML(String(day.dayOfMonth))}
                         </div>
                     </div>
                 `
