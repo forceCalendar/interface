@@ -31,6 +31,8 @@ export class BaseComponent extends HTMLElement {
   disconnectedCallback() {
     this.unmount();
     this.cleanup();
+    this._styleEl = null;
+    this._contentWrapper = null;
   }
 
   // To be overridden by child classes
@@ -131,16 +133,93 @@ export class BaseComponent extends HTMLElement {
     // Clean up existing listeners before replacing DOM
     this.cleanup();
 
-    const styles = `
-            <style>
-                ${this.getBaseStyles()}
-                ${this.getStyles()}
-            </style>
-        `;
-
     const template = this.template();
-    this.shadowRoot.innerHTML = styles + template;
+
+    // First render: create style element and content wrapper
+    if (!this._styleEl) {
+      this._styleEl = document.createElement('style');
+      this._styleEl.textContent = this.getBaseStyles() + '\n' + this.getStyles();
+      this.shadowRoot.appendChild(this._styleEl);
+      this._contentWrapper = document.createElement('div');
+      this._contentWrapper.setAttribute('id', 'fc-root');
+      this._contentWrapper.style.display = 'contents';
+      this.shadowRoot.appendChild(this._contentWrapper);
+    }
+
+    // Save scroll positions and focused element before DOM replacement
+    const scrollPositions = this._saveScrollPositions();
+    const activeSelector = this._getActiveElementSelector();
+
+    this._contentWrapper.innerHTML = template;
+
+    // Restore scroll positions and focus
+    this._restoreScrollPositions(scrollPositions);
+    this._restoreFocus(activeSelector);
+
     this.afterRender();
+  }
+
+  /**
+   * Save scroll positions of all scrollable containers within shadow DOM
+   * @returns {Map<string, {top: number, left: number}>}
+   */
+  _saveScrollPositions() {
+    const positions = new Map();
+    if (!this._contentWrapper) return positions;
+    const scrollables = this._contentWrapper.querySelectorAll('[id]');
+    scrollables.forEach(el => {
+      if (el.scrollTop !== 0 || el.scrollLeft !== 0) {
+        positions.set(el.id, { top: el.scrollTop, left: el.scrollLeft });
+      }
+    });
+    return positions;
+  }
+
+  /**
+   * Restore previously saved scroll positions
+   * @param {Map<string, {top: number, left: number}>} positions
+   */
+  _restoreScrollPositions(positions) {
+    if (!this._contentWrapper || positions.size === 0) return;
+    positions.forEach((pos, id) => {
+      const el = this._contentWrapper.querySelector('#' + id);
+      if (el) {
+        el.scrollTop = pos.top;
+        el.scrollLeft = pos.left;
+      }
+    });
+  }
+
+  /**
+   * Get a CSS selector for the currently focused element within shadow DOM
+   * @returns {string|null}
+   */
+  _getActiveElementSelector() {
+    const active = this.shadowRoot.activeElement;
+    if (!active || active === this._contentWrapper) return null;
+    if (active.id) return '#' + active.id;
+    if (active.tagName) {
+      const tag = active.tagName.toLowerCase();
+      const className = active.className ? '.' + active.className.split(/\s+/).join('.') : '';
+      return tag + className;
+    }
+    return null;
+  }
+
+  /**
+   * Restore focus to a previously focused element
+   * @param {string|null} selector
+   */
+  _restoreFocus(selector) {
+    if (!selector || !this._contentWrapper) return;
+    try {
+      const el = this._contentWrapper.querySelector(selector);
+      if (el && typeof el.focus === 'function') {
+        el.focus();
+      }
+    } catch (_) {
+      // Invalid selector, ignore
+    }
   }
 
   template() {
