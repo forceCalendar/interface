@@ -676,7 +676,7 @@ export class ForceCalendar extends BaseComponent {
                         <button class="fc-nav-arrow" data-action="previous" title="Previous">
                             ${this.getIcon('chevron-left')}
                         </button>
-                        <h2 class="fc-title">${title}</h2>
+                        <h2 class="fc-title">${DOMUtils.escapeHTML(title)}</h2>
                         <button class="fc-nav-arrow" data-action="next" title="Next">
                             ${this.getIcon('chevron-right')}
                         </button>

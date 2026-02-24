@@ -102,10 +102,10 @@ export class DayViewRenderer extends BaseViewRenderer {
                 <div style="border-right: 1px solid var(--fc-border-color);"></div>
                 <div style="padding: 16px 24px;">
                     <div style="font-size: 12px; font-weight: 700; color: var(--fc-text-light); text-transform: uppercase; letter-spacing: 0.1em;">
-                        ${dayName}
+                        ${this.escapeHTML(dayName)}
                     </div>
                     <div style="font-size: 24px; font-weight: 600; margin-top: 4px; ${isToday ? 'color: var(--fc-danger-color);' : 'color: var(--fc-text-color);'}">
-                        ${dayDate.getDate()}
+                        ${this.escapeHTML(String(dayDate.getDate()))}
                     </div>
                 </div>
             </div>

@@ -37,7 +37,7 @@ export class MonthViewRenderer extends BaseViewRenderer {
     let html = `
             <div class="fc-month-view" style="display: flex; flex-direction: column; height: 100%; min-height: 400px; background: var(--fc-background); border: 1px solid var(--fc-border-color);">
                 <div class="fc-month-header" style="display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid var(--fc-border-color); background: var(--fc-background-alt);">
-                    ${dayNames.map(d => `<div class="fc-month-header-cell" style="padding: 12px 8px; text-align: center; font-size: 11px; font-weight: 600; color: var(--fc-text-light); text-transform: uppercase;">${d}</div>`).join('')}
+                    ${dayNames.map(d => `<div class="fc-month-header-cell" style="padding: 12px 8px; text-align: center; font-size: 11px; font-weight: 600; color: var(--fc-text-light); text-transform: uppercase;">${this.escapeHTML(d)}</div>`).join('')}
                 </div>
                 <div class="fc-month-body" style="display: flex; flex-direction: column; flex: 1;">
         `;
@@ -87,10 +87,10 @@ export class MonthViewRenderer extends BaseViewRenderer {
     const moreCount = events.length - this.maxEventsToShow;
 
     return `
-            <div class="fc-month-day" data-date="${day.date}"
+            <div class="fc-month-day" data-date="${this.escapeHTML(day.date)}"
                  style="background: ${dayBg}; border-right: 1px solid var(--fc-border-color); border-bottom: 1px solid var(--fc-border-color); padding: 4px; min-height: 80px; cursor: pointer; display: flex; flex-direction: column;">
                 <div class="fc-day-number" style="font-size: 13px; font-weight: 500; color: ${dayNumColor}; padding: 2px 4px; margin-bottom: 4px; ${todayStyle}">
-                    ${day.dayOfMonth}
+                    ${this.escapeHTML(String(day.dayOfMonth))}
                 </div>
                 <div class="fc-day-events" style="display: flex; flex-direction: column; gap: 2px; flex: 1; overflow: hidden;">
                     ${visibleEvents.map(evt => this._renderEvent(evt)).join('')}
