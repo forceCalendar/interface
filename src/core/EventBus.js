@@ -167,9 +167,11 @@ class EventBus {
 
   /**
    * Check if event name matches a pattern
+   * Only `*` acts as a wildcard; all other characters match literally
    */
   matchesPattern(eventName, pattern) {
-    const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
+    const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp('^' + escaped.replace(/\*/g, '.*') + '$');
     return regex.test(eventName);
   }
 
