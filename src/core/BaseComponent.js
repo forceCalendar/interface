@@ -183,8 +183,13 @@ export class BaseComponent extends HTMLElement {
    */
   _restoreScrollPositions(positions) {
     if (!this._contentWrapper || positions.size === 0) return;
+    // CSS.escape may be absent in sandboxed or test environments
+    const escapeId =
+      typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+        ? CSS.escape
+        : id => String(id).replace(/["\\]/g, '\\$&');
     positions.forEach((pos, id) => {
-      const el = this._contentWrapper.querySelector(`[id="${CSS.escape(id)}"]`);
+      const el = this._contentWrapper.querySelector(`[id="${escapeId(id)}"]`);
       if (el) {
         el.scrollTop = pos.top;
         el.scrollLeft = pos.left;

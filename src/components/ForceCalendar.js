@@ -37,6 +37,38 @@ export class ForceCalendar extends BaseComponent {
     this._busUnsubscribers = [];
   }
 
+  /**
+   * Route observed-attribute changes into the StateManager.
+   * Without this, attribute updates after mount (view, locale, timezone,
+   * week-starts-on, date) only re-rendered from stale state and had no
+   * visible effect. 'height' is presentational and picked up by render().
+   */
+  propChanged(name, oldValue, newValue) {
+    if (!this.stateManager || oldValue === newValue) return;
+
+    switch (name) {
+      case 'view':
+        if (newValue) this.stateManager.setView(newValue);
+        break;
+      case 'date': {
+        const date = newValue ? new Date(newValue) : null;
+        if (date && !isNaN(date.getTime())) this.stateManager.setDate(date);
+        break;
+      }
+      case 'locale':
+        if (newValue) this.stateManager.updateConfig({ locale: newValue });
+        break;
+      case 'timezone':
+        if (newValue) this.stateManager.updateConfig({ timeZone: newValue });
+        break;
+      case 'week-starts-on': {
+        const day = parseInt(newValue, 10);
+        if (!Number.isNaN(day)) this.stateManager.updateConfig({ weekStartsOn: day });
+        break;
+      }
+    }
+  }
+
   initialize() {
     // Initialize state manager with config from attributes
     const config = {
