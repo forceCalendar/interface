@@ -129,14 +129,24 @@ export class DOMUtils {
 
   /**
    * Wait for animation/transition to complete
+   * Resolves after `timeout` ms even if the event never fires (animation
+   * cancelled, element removed from DOM, etc.) so awaiting callers can't hang.
+   * @param {Element} element - Element to listen on
+   * @param {string} [eventType='animationend'] - Event to wait for
+   * @param {number} [timeout=3000] - Max wait in ms; 0 disables the timeout
    */
-  static waitForAnimation(element, eventType = 'animationend') {
+  static waitForAnimation(element, eventType = 'animationend', timeout = 3000) {
     return new Promise(resolve => {
+      let timeoutId = null;
       const handler = () => {
+        if (timeoutId !== null) clearTimeout(timeoutId);
         element.removeEventListener(eventType, handler);
         resolve();
       };
       element.addEventListener(eventType, handler);
+      if (timeout > 0) {
+        timeoutId = setTimeout(handler, timeout);
+      }
     });
   }
 
@@ -149,11 +159,46 @@ export class DOMUtils {
 
   /**
    * Parse HTML string safely
+   * Sanitizes by default: strips script-capable elements, inline event
+   * handlers and javascript: URLs so the returned node is inert even if the
+   * input contains an XSS payload. Pass { sanitize: false } only for trusted,
+   * non-user-controlled markup.
    */
-  static parseHTML(htmlString) {
+  static parseHTML(htmlString, { sanitize = true } = {}) {
     const template = document.createElement('template');
     template.innerHTML = htmlString.trim();
+    if (sanitize) {
+      this._sanitizeNode(template.content);
+    }
     return template.content.firstChild;
+  }
+
+  /**
+   * Remove script-capable elements, on* handlers and javascript: URLs
+   * from a parsed DOM fragment (in place)
+   */
+  static _sanitizeNode(root) {
+    const DANGEROUS_TAGS = 'script, iframe, object, embed, link, meta, base';
+    root.querySelectorAll(DANGEROUS_TAGS).forEach(el => el.remove());
+
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+    let node = walker.nextNode();
+    while (node) {
+      for (const attr of Array.from(node.attributes)) {
+        const name = attr.name.toLowerCase();
+        // Browsers ignore control chars/whitespace inside URL schemes,
+        // so strip them before checking for javascript:/data: payloads
+        const value = attr.value.replace(/[\u0000-\u0020]/g, '').toLowerCase();
+        if (
+          name.startsWith('on') ||
+          value.startsWith('javascript:') ||
+          value.startsWith('data:text/html')
+        ) {
+          node.removeAttribute(attr.name);
+        }
+      }
+      node = walker.nextNode();
+    }
   }
 
   /**
@@ -234,14 +279,13 @@ export class DOMUtils {
   }
 
   /**
-   * Clone element with event listeners
+   * Clone an element. Event listeners are NOT copied — the Web Platform
+   * provides no way to enumerate listeners, so callers must re-attach their
+   * own handlers to the clone.
+   * @deprecated Use element.cloneNode(deep) directly and re-bind listeners.
    */
   static cloneWithEvents(element, deep = true) {
-    const clone = element.cloneNode(deep);
-
-    // Copy event listeners (Note: This is a simplified version)
-    // In production, you'd need a more robust event copying mechanism
-    return clone;
+    return element.cloneNode(deep);
   }
 
   /**
@@ -266,13 +310,18 @@ export class DOMUtils {
     const handleKeyDown = e => {
       if (e.key !== 'Tab') return;
 
+      // Inside Shadow DOM, document.activeElement reports the host element;
+      // the shadow root's own activeElement gives the truly focused node.
+      const root = container.getRootNode();
+      const activeElement = root.activeElement ?? document.activeElement;
+
       if (e.shiftKey) {
-        if (document.activeElement === firstFocusable) {
+        if (activeElement === firstFocusable) {
           lastFocusable?.focus();
           e.preventDefault();
         }
       } else {
-        if (document.activeElement === lastFocusable) {
+        if (activeElement === lastFocusable) {
           firstFocusable?.focus();
           e.preventDefault();
         }

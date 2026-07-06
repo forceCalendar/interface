@@ -253,12 +253,12 @@ export class EventForm extends BaseComponent {
                             ${this.config.colors
                               .map(
                                 c => `
-                                <button type="button" 
-                                        class="color-btn ${c.color === this._formData.color ? 'selected' : ''}" 
-                                        style="background-color: ${c.color}" 
-                                        data-color="${c.color}"
-                                        title="${c.label}"
-                                        aria-label="${c.label}"
+                                <button type="button"
+                                        class="color-btn ${c.color === this._formData.color ? 'selected' : ''}"
+                                        style="background-color: ${StyleUtils.sanitizeColor(c.color)}"
+                                        data-color="${DOMUtils.escapeHTML(c.color)}"
+                                        title="${DOMUtils.escapeHTML(c.label)}"
+                                        aria-label="${DOMUtils.escapeHTML(c.label)}"
                                         aria-checked="${c.color === this._formData.color ? 'true' : 'false'}"
                                         role="radio"></button>
                             `
