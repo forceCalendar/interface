@@ -8,3 +8,4 @@ dist
 # Local development docs (remove when ready to share)
 CONTRIBUTING.md
 Trigger rebuild
+coverage/
