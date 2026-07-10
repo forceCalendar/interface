@@ -396,6 +396,20 @@ export class ForceCalendar extends BaseComponent {
                 padding: 0;
             }
 
+            .fc-month-day:focus-visible,
+            .fc-event:focus-visible {
+                outline: 2px solid var(--fc-primary-color);
+                outline-offset: -2px;
+            }
+
+            .fc-nav-arrow:focus-visible,
+            .fc-btn:focus-visible,
+            .fc-btn-today:focus-visible,
+            .fc-view-button:focus-visible {
+                outline: 2px solid var(--fc-primary-color);
+                outline-offset: 2px;
+            }
+
             .fc-nav-arrow:hover {
                 background: var(--fc-background-hover);
                 color: var(--fc-text-color);
@@ -705,11 +719,11 @@ export class ForceCalendar extends BaseComponent {
                     </div>
 
                     <div class="fc-header-center">
-                        <button class="fc-nav-arrow" data-action="previous" title="Previous">
+                        <button class="fc-nav-arrow" data-action="previous" title="Previous" aria-label="Previous ${view}">
                             ${this.getIcon('chevron-left')}
                         </button>
-                        <h2 class="fc-title">${DOMUtils.escapeHTML(title)}</h2>
-                        <button class="fc-nav-arrow" data-action="next" title="Next">
+                        <h2 class="fc-title" aria-live="polite">${DOMUtils.escapeHTML(title)}</h2>
+                        <button class="fc-nav-arrow" data-action="next" title="Next" aria-label="Next ${view}">
                             ${this.getIcon('chevron-right')}
                         </button>
                     </div>
@@ -718,12 +732,15 @@ export class ForceCalendar extends BaseComponent {
                         <button class="fc-btn fc-btn-primary" id="create-event-btn" style="height: 28px; padding: 0 12px; font-size: 12px;">
                             + New Event
                         </button>
-                        <div class="fc-view-buttons" role="group">
+                        <div class="fc-view-buttons" role="group" aria-label="Calendar view">
                             <button class="fc-view-button ${view === 'month' ? 'active' : ''}"
+                                    aria-pressed="${view === 'month' ? 'true' : 'false'}"
                                     data-view="month">Month</button>
                             <button class="fc-view-button ${view === 'week' ? 'active' : ''}"
+                                    aria-pressed="${view === 'week' ? 'true' : 'false'}"
                                     data-view="week">Week</button>
                             <button class="fc-view-button ${view === 'day' ? 'active' : ''}"
+                                    aria-pressed="${view === 'day' ? 'true' : 'false'}"
                                     data-view="day">Day</button>
                         </div>
                     </div>

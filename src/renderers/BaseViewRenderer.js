@@ -304,12 +304,46 @@ export class BaseViewRenderer {
       if (!eventEl || !this.container.contains(eventEl)) return;
 
       e.stopPropagation();
-      const eventId = eventEl.dataset.eventId;
-      const event = this.stateManager.getEvents().find(ev => ev.id === eventId);
-      if (event) {
-        this.stateManager.selectEvent(event);
-      }
+      this._selectEventFromElement(eventEl);
     });
+
+    // Keyboard activation for events (Enter / Space)
+    this.addListener(this.container, 'keydown', e => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const eventEl = e.target.closest('.fc-event');
+      if (!eventEl || !this.container.contains(eventEl)) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      this._selectEventFromElement(eventEl);
+    });
+
+    this._enhanceEventAccessibility();
+  }
+
+  _selectEventFromElement(eventEl) {
+    const eventId = eventEl.dataset.eventId;
+    const event = this.stateManager.getEvents().find(ev => ev.id === eventId);
+    if (event) {
+      this.stateManager.selectEvent(event);
+    }
+  }
+
+  /**
+   * Make rendered events keyboard-reachable and screen-reader labeled.
+   * Runs after every render, across all views.
+   */
+  _enhanceEventAccessibility() {
+    for (const el of this.container.querySelectorAll('.fc-event')) {
+      el.setAttribute('role', 'button');
+      el.setAttribute('tabindex', '0');
+      if (!el.hasAttribute('aria-label')) {
+        const label = (el.getAttribute('title') || el.textContent || '').trim();
+        if (label) {
+          el.setAttribute('aria-label', `Event: ${label}`);
+        }
+      }
+    }
   }
 }
 
