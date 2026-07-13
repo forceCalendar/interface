@@ -9,3 +9,4 @@ dist
 CONTRIBUTING.md
 Trigger rebuild
 coverage/
+types/
