@@ -144,7 +144,7 @@ export class WeekViewRenderer extends BaseViewRenderer {
     return `
             <div class="fc-week-day-column" data-date="${day.date.toISOString()}" style="border-right: 1px solid var(--fc-border-color); position: relative; cursor: pointer;">
                 <!-- Hour grid lines -->
-                ${hours.map(() => `<div style="height: ${this.hourHeight}px; border-bottom: 1px solid var(--fc-background-hover);"></div>`).join('')}
+                ${hours.map(h => `<div class="fc-hour-slot" data-hour="${h}" style="height: ${this.hourHeight}px; border-bottom: 1px solid var(--fc-background-hover);"></div>`).join('')}
 
                 <!-- Now indicator for today -->
                 ${day.isToday ? this.renderNowIndicator() : ''}
@@ -190,6 +190,12 @@ export class WeekViewRenderer extends BaseViewRenderer {
 
     // Common event handlers (event clicks)
     this.attachCommonEventHandlers();
+
+    const days = this.stateManager.getViewData()?.days || [];
+    const locale = this.stateManager.getState().config.locale || 'en-US';
+    const first = days[0] ? new Date(days[0].date) : new Date();
+    const label = `Week of ${new Intl.DateTimeFormat(locale, { month: 'long', day: 'numeric', year: 'numeric' }).format(first)}`;
+    this._enhanceTimeGridAccessibility('.fc-week-day-column', label);
   }
 
   _scrollToCurrentTime() {

@@ -397,6 +397,7 @@ export class ForceCalendar extends BaseComponent {
             }
 
             .fc-month-day:focus-visible,
+            .fc-hour-slot:focus-visible,
             .fc-event:focus-visible {
                 outline: 2px solid var(--fc-primary-color);
                 outline-offset: -2px;

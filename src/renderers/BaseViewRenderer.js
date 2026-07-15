@@ -330,6 +330,146 @@ export class BaseViewRenderer {
   }
 
   /**
+   * WAI-ARIA semantics and keyboard navigation for time grids (week/day
+   * views). The DOM is column-major (a column per day, an hour line per
+   * slot), so each day column is exposed as a row of 24 hour gridcells.
+   * Arrow keys navigate visually: Up/Down moves hours, Left/Right moves
+   * days, Home/End jumps to the day's bounds, PageUp/PageDown navigates
+   * periods, Enter/Space selects the slot's date and time.
+   * @param {string} columnSelector - Selector for the day columns
+   * @param {string} gridLabel - Accessible label for the grid
+   */
+  _enhanceTimeGridAccessibility(columnSelector, gridLabel) {
+    const grid = this.container.querySelector('.fc-time-grid');
+    if (!grid) return;
+    grid.setAttribute('role', 'grid');
+    grid.setAttribute('aria-label', gridLabel);
+    const gutter = this.container.querySelector('.fc-time-gutter');
+    if (gutter) gutter.setAttribute('aria-hidden', 'true');
+
+    const locale = this.stateManager.getState().config.locale || 'en-US';
+    const dayFormatter = new Intl.DateTimeFormat(locale, {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    const columns = Array.from(this.container.querySelectorAll(columnSelector));
+    for (const col of columns) {
+      col.setAttribute('role', 'row');
+      const colDate = new Date(col.dataset.date);
+      const colLabel = dayFormatter.format(colDate);
+      col.setAttribute('aria-label', colLabel);
+      for (const slot of col.querySelectorAll('.fc-hour-slot')) {
+        slot.setAttribute('role', 'gridcell');
+        slot.setAttribute('tabindex', '-1');
+        slot.setAttribute(
+          'aria-label',
+          `${colLabel}, ${this.formatHour(Number(slot.dataset.hour))}`
+        );
+      }
+    }
+
+    this._applySlotRovingTabindex(columns);
+
+    if (this._pendingSlotFocus) {
+      const { colIndex, hour } = this._pendingSlotFocus;
+      this._pendingSlotFocus = null;
+      const target = this._slotAt(columns, colIndex, hour);
+      if (target) {
+        this._applySlotRovingTabindex(columns, target);
+        target.focus();
+      }
+    }
+
+    this.addListener(this.container, 'keydown', e => {
+      const slot = e.target.closest('.fc-hour-slot');
+      if (!slot || !this.container.contains(slot)) return;
+      const col = slot.closest(columnSelector);
+      const colIndex = columns.indexOf(col);
+      const hour = Number(slot.dataset.hour);
+      let target = null;
+
+      switch (e.key) {
+        case 'ArrowDown':
+          target = this._slotAt(columns, colIndex, hour + 1);
+          break;
+        case 'ArrowUp':
+          target = this._slotAt(columns, colIndex, hour - 1);
+          break;
+        case 'ArrowRight':
+          target = this._slotAt(columns, colIndex + 1, hour);
+          break;
+        case 'ArrowLeft':
+          target = this._slotAt(columns, colIndex - 1, hour);
+          break;
+        case 'Home':
+          target = this._slotAt(columns, colIndex, 0);
+          break;
+        case 'End':
+          target = this._slotAt(columns, colIndex, 23);
+          break;
+        case 'PageUp':
+        case 'PageDown':
+          e.preventDefault();
+          this._pendingSlotFocus = { colIndex, hour };
+          if (e.key === 'PageDown') {
+            this.stateManager.next();
+          } else {
+            this.stateManager.previous();
+          }
+          return;
+        case 'Enter':
+        case ' ': {
+          e.preventDefault();
+          const date = new Date(col.dataset.date);
+          date.setHours(hour, 0, 0, 0);
+          this._pendingSlotFocus = { colIndex, hour };
+          this.stateManager.selectDate(date);
+          return;
+        }
+        default:
+          return;
+      }
+
+      e.preventDefault();
+      if (target) {
+        this._applySlotRovingTabindex(columns, target);
+        target.scrollIntoView?.({ block: 'nearest' });
+        target.focus();
+      }
+    });
+  }
+
+  /**
+   * Get the hour slot at a column/hour position
+   * @private
+   */
+  _slotAt(columns, colIndex, hour) {
+    if (colIndex < 0 || colIndex >= columns.length || hour < 0 || hour > 23) return null;
+    return columns[colIndex].querySelector(`.fc-hour-slot[data-hour="${hour}"]`);
+  }
+
+  /**
+   * Keep exactly one hour slot tabbable. Defaults to 9:00 AM in the
+   * first column (today's column when present).
+   * @private
+   */
+  _applySlotRovingTabindex(columns, active = null) {
+    const slots = this.container.querySelectorAll('.fc-hour-slot');
+    if (slots.length === 0) return;
+    if (!active) {
+      const todayCol =
+        columns.find(c => this.isToday(new Date(c.dataset.date))) || columns[0];
+      active = todayCol && todayCol.querySelector('.fc-hour-slot[data-hour="9"]');
+      active = active || slots[0];
+    }
+    for (const s of slots) {
+      s.setAttribute('tabindex', s === active ? '0' : '-1');
+    }
+  }
+
+  /**
    * Make rendered events keyboard-reachable and screen-reader labeled.
    * Runs after every render, across all views.
    */

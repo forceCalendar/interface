@@ -165,7 +165,7 @@ export class DayViewRenderer extends BaseViewRenderer {
     return `
             <div class="fc-day-column" data-date="${dayDate.toISOString()}" style="position: relative; cursor: pointer;">
                 <!-- Hour grid lines -->
-                ${hours.map(() => `<div style="height: ${this.hourHeight}px; border-bottom: 1px solid var(--fc-background-hover);"></div>`).join('')}
+                ${hours.map(h => `<div class="fc-hour-slot" data-hour="${h}" style="height: ${this.hourHeight}px; border-bottom: 1px solid var(--fc-background-hover);"></div>`).join('')}
 
                 <!-- Now indicator for today -->
                 ${isToday ? this.renderNowIndicator() : ''}
@@ -211,6 +211,11 @@ export class DayViewRenderer extends BaseViewRenderer {
 
     // Common event handlers (event clicks)
     this.attachCommonEventHandlers();
+
+    const locale = this.stateManager.getState().config.locale || 'en-US';
+    const current = this.stateManager.getState().currentDate || new Date();
+    const label = new Intl.DateTimeFormat(locale, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).format(current);
+    this._enhanceTimeGridAccessibility('.fc-day-column', label);
   }
 
   _scrollToCurrentTime() {
