@@ -6,6 +6,7 @@
 
 import { BaseViewRenderer } from './BaseViewRenderer.js';
 import { DateUtils } from '../utils/DateUtils.js';
+import { DragController } from '../core/DragController.js';
 
 export class WeekViewRenderer extends BaseViewRenderer {
   constructor(container, stateManager) {
@@ -196,6 +197,9 @@ export class WeekViewRenderer extends BaseViewRenderer {
     const first = days[0] ? new Date(days[0].date) : new Date();
     const label = `Week of ${new Intl.DateTimeFormat(locale, { month: 'long', day: 'numeric', year: 'numeric' }).format(first)}`;
     this._enhanceTimeGridAccessibility('.fc-week-day-column', label);
+
+    // Drag to move/resize events and drag empty grid to create
+    new DragController(this).enableTimeGrid('.fc-week-day-column');
   }
 
   _scrollToCurrentTime() {

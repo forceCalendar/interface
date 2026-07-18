@@ -403,6 +403,39 @@ export class ForceCalendar extends BaseComponent {
                 outline-offset: -2px;
             }
 
+            .fc-event { touch-action: none; }
+
+            .fc-dragging {
+                opacity: 0.6;
+                z-index: 30;
+                pointer-events: none;
+            }
+
+            .fc-drop-target {
+                outline: 2px dashed var(--fc-primary-color);
+                outline-offset: -2px;
+            }
+
+            .fc-resize-handle {
+                position: absolute;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                height: 6px;
+                cursor: ns-resize;
+            }
+
+            .fc-drag-selection {
+                position: absolute;
+                left: 2px;
+                right: 2px;
+                background: color-mix(in srgb, var(--fc-primary-color) 18%, transparent);
+                border: 1px solid var(--fc-primary-color);
+                border-radius: 4px;
+                pointer-events: none;
+                z-index: 20;
+            }
+
             .fc-nav-arrow:focus-visible,
             .fc-btn:focus-visible,
             .fc-btn-today:focus-visible,
@@ -831,6 +864,14 @@ export class ForceCalendar extends BaseComponent {
     this.addListener(this.shadowRoot, 'day-click', e => {
       if (modal) {
         modal.open(e.detail.date);
+      }
+    });
+
+    // Drag-to-create emits a range: surface it and open the form prefilled
+    this.addListener(this.shadowRoot, 'range-select', e => {
+      this.emit('calendar-range-select', e.detail);
+      if (modal) {
+        modal.open(e.detail.start);
       }
     });
 

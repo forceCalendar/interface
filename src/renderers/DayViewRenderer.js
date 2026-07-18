@@ -5,6 +5,7 @@
  */
 
 import { BaseViewRenderer } from './BaseViewRenderer.js';
+import { DragController } from '../core/DragController.js';
 import { DateUtils } from '../utils/DateUtils.js';
 
 export class DayViewRenderer extends BaseViewRenderer {
@@ -216,6 +217,9 @@ export class DayViewRenderer extends BaseViewRenderer {
     const current = this.stateManager.getState().currentDate || new Date();
     const label = new Intl.DateTimeFormat(locale, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).format(current);
     this._enhanceTimeGridAccessibility('.fc-day-column', label);
+
+    // Drag to move/resize events and drag empty grid to create
+    new DragController(this).enableTimeGrid('.fc-day-column');
   }
 
   _scrollToCurrentTime() {

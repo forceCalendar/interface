@@ -6,6 +6,7 @@
 
 import { BaseViewRenderer } from './BaseViewRenderer.js';
 import { DateUtils } from '../utils/DateUtils.js';
+import { DragController } from '../core/DragController.js';
 
 export class MonthViewRenderer extends BaseViewRenderer {
   constructor(container, stateManager) {
@@ -228,6 +229,9 @@ export class MonthViewRenderer extends BaseViewRenderer {
 
     // Common event handlers (event clicks)
     this.attachCommonEventHandlers();
+
+    // Drag an event chip onto another day to move it
+    new DragController(this).enableMonthMove();
   }
 
   /**
