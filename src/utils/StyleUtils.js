@@ -2,6 +2,34 @@
  * StyleUtils - Styling utilities and theme management
  */
 
+/**
+ * Named theme presets applied via the <forcecal-main theme="..."> attribute.
+ * Each maps design tokens to a platform's visual language.
+ */
+export const THEME_PRESETS = {
+  // Salesforce Lightning Design System: looks native on the platform
+  slds: {
+    '--fc-primary-color': '#0176d3',
+    '--fc-primary-hover': '#014486',
+    '--fc-primary-light': '#eef4ff',
+    '--fc-accent-color': '#0b5cab',
+    '--fc-text-color': '#181818',
+    '--fc-text-secondary': '#706e6b',
+    '--fc-text-light': '#939393',
+    '--fc-border-color': '#e5e5e5',
+    '--fc-border-color-hover': '#c9c9c9',
+    '--fc-background': '#ffffff',
+    '--fc-background-alt': '#f3f3f3',
+    '--fc-background-hover': '#f3f3f3',
+    '--fc-background-active': '#d8e6fe',
+    '--fc-danger-color': '#ea001e',
+    '--fc-success-color': '#2e844a',
+    '--fc-border-radius': '0.25rem',
+    '--fc-border-radius-sm': '0.125rem',
+    '--fc-font-family': "'Salesforce Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+  }
+};
+
 export class StyleUtils {
   /**
    * Default theme colors

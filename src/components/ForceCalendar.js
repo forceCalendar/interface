@@ -6,7 +6,7 @@
 
 import { BaseComponent } from '../core/BaseComponent.js';
 import StateManager from '../core/StateManager.js';
-import { StyleUtils } from '../utils/StyleUtils.js';
+import { StyleUtils, THEME_PRESETS } from '../utils/StyleUtils.js';
 import { DateUtils } from '../utils/DateUtils.js';
 import { DOMUtils } from '../utils/DOMUtils.js';
 
@@ -26,7 +26,7 @@ export class ForceCalendar extends BaseComponent {
   };
 
   static get observedAttributes() {
-    return ['view', 'date', 'locale', 'timezone', 'week-starts-on', 'height'];
+    return ['view', 'date', 'locale', 'timezone', 'week-starts-on', 'height', 'theme'];
   }
 
   constructor() {
@@ -801,7 +801,25 @@ export class ForceCalendar extends BaseComponent {
     return '<div id="calendar-view-container"></div>';
   }
 
+  /**
+   * Apply a named theme preset (e.g. theme="slds") as host-level custom
+   * properties so it cascades into the shadow DOM and stays overridable
+   * by page-level --fc-* variables.
+   */
+  _applyTheme(name) {
+    const preset = THEME_PRESETS[name];
+    for (const token of Object.keys(THEME_PRESETS.slds)) {
+      if (preset && preset[token]) {
+        this.style.setProperty(token, preset[token]);
+      } else {
+        this.style.removeProperty(token);
+      }
+    }
+  }
+
   afterRender() {
+    this._applyTheme(this.getAttribute('theme'));
+
     // Manually instantiate and mount view renderer (bypasses Locker Service)
     const container = this.$('#calendar-view-container');
 

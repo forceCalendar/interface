@@ -56,3 +56,21 @@ describe('ForceCalendar attribute reactivity', () => {
         expect(el.getEvents()).toHaveLength(1);
     });
 });
+
+describe('Theme presets', () => {
+    test('theme="slds" applies and clears host-level tokens', async () => {
+        const el = document.createElement('forcecal-main');
+        document.body.appendChild(el);
+        await new Promise(r => setTimeout(r, 0));
+
+        el.setAttribute('theme', 'slds');
+        await new Promise(r => setTimeout(r, 0));
+        expect(el.style.getPropertyValue('--fc-primary-color')).toBe('#0176d3');
+        expect(el.style.getPropertyValue('--fc-background-alt')).toBe('#f3f3f3');
+
+        el.removeAttribute('theme');
+        await new Promise(r => setTimeout(r, 0));
+        expect(el.style.getPropertyValue('--fc-primary-color')).toBe('');
+        el.remove();
+    });
+});
