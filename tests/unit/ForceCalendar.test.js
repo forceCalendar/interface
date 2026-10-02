@@ -1,5 +1,69 @@
 import '../../src/components/ForceCalendar.js';
 
+describe('ForceCalendar week titles', () => {
+  let el;
+  const flush = () => new Promise(r => setTimeout(r, 20));
+
+  beforeEach(() => {
+    el = document.createElement('forcecal-main');
+    el.setAttribute('view', 'week');
+  });
+
+  afterEach(() => {
+    el.remove();
+  });
+
+  test.each([
+    [undefined, '2026-10-02', '2026-09-27', '2026-10-03', 'Sep 27, 2026 - October 3, 2026'],
+    [0, '2026-10-04', '2026-10-04', '2026-10-10', 'Oct 4, 2026 - October 10, 2026'],
+    [1, '2026-10-02', '2026-09-28', '2026-10-04', 'Sep 28, 2026 - October 4, 2026'],
+    [1, '2026-10-05', '2026-10-05', '2026-10-11', 'Oct 5, 2026 - October 11, 2026'],
+    [0, '2027-01-01', '2026-12-27', '2027-01-02', 'December 27, 2026 - January 2, 2027'],
+    [1, '2027-01-01', '2026-12-28', '2027-01-03', 'December 28, 2026 - January 3, 2027']
+  ])(
+    'weekStartsOn=%s on %s keeps the title, visible range and grid aligned',
+    async (weekStartsOn, date, start, end, title) => {
+      el.setAttribute('date', `${date}T12:00:00`);
+      if (weekStartsOn !== undefined) {
+        el.setAttribute('week-starts-on', String(weekStartsOn));
+      }
+      document.body.appendChild(el);
+      await flush();
+
+      const range = el.getVisibleRange();
+      const startDate = new Date(`${start}T00:00:00`);
+      const endDate = new Date(`${end}T00:00:00`);
+      const columns = el.shadowRoot.querySelectorAll('.fc-week-day-column');
+
+      expect(range.start).toEqual(startDate);
+      expect(range.end).toEqual(new Date(`${end}T23:59:59.999`));
+      expect(columns).toHaveLength(7);
+      expect(new Date(columns[0].dataset.date)).toEqual(startDate);
+      expect(new Date(columns[6].dataset.date)).toEqual(endDate);
+      expect(el.getTitle(new Date(`${date}T12:00:00`), 'week')).toBe(title);
+      expect(el.shadowRoot.querySelector('.fc-title').textContent).toBe(title);
+    }
+  );
+
+  test('changing the week start and locale updates the rendered title', async () => {
+    el.setAttribute('date', '2027-01-01T12:00:00');
+    document.body.appendChild(el);
+    await flush();
+    expect(el.shadowRoot.querySelector('.fc-title').textContent).toBe(
+      'December 27, 2026 - January 2, 2027'
+    );
+
+    el.setAttribute('week-starts-on', '1');
+    el.setAttribute('locale', 'de-DE');
+    await flush();
+
+    expect(el.shadowRoot.querySelector('.fc-title').textContent).toBe(
+      '28. Dezember 2026 - 3. Januar 2027'
+    );
+    expect(el.getVisibleRange().start).toEqual(new Date(2026, 11, 28));
+  });
+});
+
 describe('ForceCalendar attribute reactivity', () => {
   let el;
 
