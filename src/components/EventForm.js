@@ -69,6 +69,8 @@ export class EventForm extends BaseComponent {
                 background: var(--fc-background);
                 width: 400px;
                 max-width: 90vw;
+                max-height: 90vh;
+                overflow: hidden;
                 border-radius: var(--fc-border-radius-lg);
                 box-shadow: var(--fc-shadow-lg);
                 border: 1px solid var(--fc-border-color);
@@ -78,6 +80,7 @@ export class EventForm extends BaseComponent {
             }
 
             .modal-header {
+                flex-shrink: 0;
                 padding: var(--fc-spacing-lg);
                 border-bottom: 1px solid var(--fc-border-color);
                 display: flex;
@@ -109,6 +112,8 @@ export class EventForm extends BaseComponent {
             }
 
             .modal-body {
+                min-height: 0;
+                overflow-y: auto;
                 padding: var(--fc-spacing-lg);
                 display: flex;
                 flex-direction: column;
@@ -116,6 +121,7 @@ export class EventForm extends BaseComponent {
             }
 
             .form-group {
+                min-width: 0;
                 display: flex;
                 flex-direction: column;
                 gap: 4px;
@@ -130,6 +136,8 @@ export class EventForm extends BaseComponent {
             input[type="text"],
             input[type="datetime-local"],
             select {
+                width: 100%;
+                min-width: 0;
                 padding: 8px 12px;
                 border: 1px solid var(--fc-border-color);
                 border-radius: var(--fc-border-radius);
@@ -149,6 +157,7 @@ export class EventForm extends BaseComponent {
 
             .row {
                 display: flex;
+                flex-direction: column;
                 gap: var(--fc-spacing-md);
             }
             
@@ -157,6 +166,7 @@ export class EventForm extends BaseComponent {
             }
 
             .modal-footer {
+                flex-shrink: 0;
                 padding: var(--fc-spacing-lg);
                 border-top: 1px solid var(--fc-border-color);
                 display: flex;
@@ -170,6 +180,7 @@ export class EventForm extends BaseComponent {
             /* Color picker style */
             .color-options {
                 display: flex;
+                flex-wrap: wrap;
                 gap: 8px;
                 margin-top: 4px;
             }
@@ -299,9 +310,10 @@ export class EventForm extends BaseComponent {
       });
     });
 
-    // Close on backdrop click
+    // Shadow DOM retargets inside clicks to the host. Only dismiss when the
+    // composed path does not pass through the dialog, including nested shadows.
     this.addListener(this, 'click', e => {
-      if (e.target === this) this.close();
+      if (!e.composedPath().includes(this.modalContent)) this.close();
     });
 
     // Close on Escape key - only add once to prevent memory leaks
