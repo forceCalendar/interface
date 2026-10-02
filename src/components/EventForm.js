@@ -1,6 +1,7 @@
 import { BaseComponent } from '../core/BaseComponent.js';
 import { StyleUtils } from '../utils/StyleUtils.js';
 import { DOMUtils } from '../utils/DOMUtils.js';
+import { isRecurringEvent } from '../utils/EventUtils.js';
 
 /**
  * @typedef {Object} EditableEvent
@@ -411,6 +412,10 @@ export class EventForm extends BaseComponent {
    * @param {EditableEvent} event
    */
   edit(event) {
+    if (isRecurringEvent(event)) {
+      this.close();
+      return;
+    }
     this.editingEventId = event.id;
     this._show(event);
   }

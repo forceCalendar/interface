@@ -54,6 +54,14 @@ Rules of the road:
 
 Rendered chips of a recurring series carry occurrence ids (`<masterId>_<startMs>`). Clicking or selecting an occurrence resolves to its master (`stateManager.findEvent(id)`), while details retain the clicked occurrence's time. Built-in drag, resize, Edit and Delete are unavailable for recurring events: changing one occurrence or a whole series requires an explicit scope workflow, which is not supported yet. Host APIs remain available for applications that implement their own scoped editing.
 
+For instances already expanded by an external service (for example Salesforce),
+keep `recurring`/`recurrenceRule` unset and add
+`metadata: { forceCalendarRecurring: true }`. This explicit host marker disables
+built-in Edit/Delete/drag/resize while rendering the ordinary supplied event once;
+it does not generate occurrences or invent an RRULE. Hosts remain responsible for
+server-side recurrence mutation permissions. The standalone editor also declines
+recurring events; imperative host CRUD APIs retain their documented behavior.
+
 ## Event details and editing
 
 Click an event, or focus it and press Enter/Space, to open its details: title, the displayed instance's date/time, location and available actions. Times use the browser's local display, as the calendar grid does. The calendar-owned dialog uses ordinary DOM nodes inside the calendar's shadow root, without a portal or the native Popover API.
