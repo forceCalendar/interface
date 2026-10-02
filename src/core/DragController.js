@@ -9,6 +9,8 @@
  * (arrow keys + Enter) that every view already implements.
  */
 
+import { isRecurringEvent } from '../utils/EventUtils.js';
+
 const DRAG_THRESHOLD_PX = 4;
 const SNAP_MINUTES = 15;
 const PX_PER_MINUTE = 1; // time grids render 60px per hour
@@ -128,6 +130,7 @@ export class DragController {
   _arm(e, spec) {
     if (this._destroyed || this.renderer.readOnly) return;
     this._cancel();
+    if (spec.mode !== 'create' && !this._canMutateInstance(spec.eventId)) return;
     this._active = {
       ...spec,
       startX: e.clientX,
@@ -153,8 +156,21 @@ export class DragController {
     ];
   }
 
+  _canMutateInstance(eventId) {
+    const target = this.stateManager.resolveEventInstance(eventId);
+    return Boolean(target && !isRecurringEvent(target.event));
+  }
+
+  _activeMutationBlocked() {
+    return (
+      this._active &&
+      this._active.mode !== 'create' &&
+      !this._canMutateInstance(this._active.eventId)
+    );
+  }
+
   _onPointerMove(e) {
-    if (this._destroyed || this.renderer.readOnly) {
+    if (this._destroyed || this.renderer.readOnly || this._activeMutationBlocked()) {
       this._cancel();
       return;
     }
@@ -177,7 +193,7 @@ export class DragController {
   }
 
   _onPointerUp(e) {
-    if (this._destroyed || this.renderer.readOnly) {
+    if (this._destroyed || this.renderer.readOnly || this._activeMutationBlocked()) {
       this._cancel();
       return;
     }
@@ -281,7 +297,7 @@ export class DragController {
     const cell = a.dropCell;
     if (!cell) return;
     const target = this.stateManager.resolveEventInstance(a.eventId);
-    if (!target) return;
+    if (!target || isRecurringEvent(target.event)) return;
     const oldStart = target.start;
     const newStart = moveDatePreservingTime(new Date(cell.dataset.date), oldStart);
     const delta = newStart.getTime() - oldStart.getTime();
@@ -290,15 +306,14 @@ export class DragController {
   }
 
   /**
-   * Apply a move to the stored event. Dragging an occurrence of a recurring
-   * series shifts the whole series by the same delta (there is no
-   * per-occurrence edit yet), which is why the delta is computed against the
-   * dragged instance's own times and applied to the master.
+   * Apply a move only to a non-recurring event. Series/occurrence mutation
+   * requires an explicit scope UI and is intentionally unavailable here.
    * @param {import('@forcecalendar/core').Event} event - Stored event (master for an occurrence)
    * @param {number} delta - Milliseconds to shift start and end by
    * @private
    */
   _shiftEvent(event, delta) {
+    if (isRecurringEvent(event)) return;
     this.stateManager.updateEvent(event.id, {
       start: new Date(new Date(event.start).getTime() + delta),
       end: new Date(new Date(event.end).getTime() + delta)
@@ -328,7 +343,12 @@ export class DragController {
   _timeMoveDrop() {
     const a = this._active ?? {};
     const target = this.stateManager.resolveEventInstance(a.eventId);
-    if (!target || (!a.deltaMinutes && a.dropColumn === a.originColumn)) return;
+    if (
+      !target ||
+      isRecurringEvent(target.event) ||
+      (!a.deltaMinutes && a.dropColumn === a.originColumn)
+    )
+      return;
 
     const oldStart = target.start;
     const duration = target.end.getTime() - oldStart.getTime();
@@ -358,8 +378,7 @@ export class DragController {
     const a = this._active ?? {};
     if (!a.newHeight || a.newHeight === a.originHeight) return;
     const target = this.stateManager.resolveEventInstance(a.eventId);
-    if (!target) return;
-    // Resizing an occurrence changes the duration of the whole series
+    if (!target || isRecurringEvent(target.event)) return;
     const { event } = target;
     const newEnd = new Date(new Date(event.start).getTime() + a.newHeight * 60000);
     this.stateManager.updateEvent(event.id, { end: newEnd });
@@ -405,6 +424,7 @@ export class DragController {
   /** Append a resize handle to every timed event (idempotent per render). */
   _injectResizeHandles() {
     for (const el of this.container.querySelectorAll('.fc-timed-event')) {
+      if (!this._canMutateInstance(el.dataset.eventId)) continue;
       if (el.querySelector('.fc-resize-handle')) continue;
       const handle = this.container.ownerDocument.createElement('div');
       handle.className = 'fc-resize-handle';

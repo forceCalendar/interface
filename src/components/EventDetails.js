@@ -1,4 +1,5 @@
 import { DOMUtils } from '../utils/DOMUtils.js';
+import { isRecurringEvent } from '../utils/EventUtils.js';
 
 /**
  * Calendar-owned event details. Uses ordinary DOM nodes in the calendar's
@@ -128,9 +129,7 @@ export class EventDetails {
   }
 
   static isRecurring(event) {
-    return Boolean(
-      event.recurring || event.recurrenceRule || event.isOccurrence || event.recurringEventId
-    );
+    return isRecurringEvent(event);
   }
 
   _position(dialog) {

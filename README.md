@@ -52,7 +52,7 @@ Rules of the road:
 
 ### Recurring events
 
-Rendered chips of a recurring series carry occurrence ids (`<masterId>_<startMs>`). Clicking, selecting, dragging or resizing an occurrence resolves to the series master (`stateManager.findEvent(id)`), so `calendar-event-update` and the selection always carry the master event. There is no per-occurrence edit yet: dragging an occurrence shifts the whole series by the dragged delta (a change of date and time of day for every occurrence) and resizing one changes the duration of every occurrence.
+Rendered chips of a recurring series carry occurrence ids (`<masterId>_<startMs>`). Clicking or selecting an occurrence resolves to its master (`stateManager.findEvent(id)`), while details retain the clicked occurrence's time. Built-in drag, resize, Edit and Delete are unavailable for recurring events: changing one occurrence or a whole series requires an explicit scope workflow, which is not supported yet. Host APIs remain available for applications that implement their own scoped editing.
 
 ## Event details and editing
 
