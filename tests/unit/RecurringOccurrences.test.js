@@ -1,16 +1,11 @@
 import StateManager from '../../src/core/StateManager.js';
 import { MonthViewRenderer } from '../../src/renderers/MonthViewRenderer.js';
 import { WeekViewRenderer } from '../../src/renderers/WeekViewRenderer.js';
+import { DayViewRenderer } from '../../src/renderers/DayViewRenderer.js';
 import { Event as CoreEvent } from '@forcecalendar/core';
 
 const pointer = (type, x, y) =>
   new MouseEvent(type, { bubbles: true, composed: true, clientX: x, clientY: y, button: 0 });
-
-const mockRects = (els, rectFor) => {
-  els.forEach((el, i) => {
-    el.getBoundingClientRect = () => rectFor(el, i);
-  });
-};
 
 // Weekly series starting Wed 1 Jul 2026 10:00-11:00: 1, 8, 15, 22, 29 July
 const series = () => ({
@@ -99,104 +94,96 @@ describe('Clicking a recurring occurrence chip', () => {
   });
 });
 
-describe('Dragging a recurring occurrence', () => {
+describe('Recurring drag/resize safety', () => {
   let manager, container, renderer;
-
+  const mount = (Renderer, view) => {
+    manager = new StateManager({ view, date: new Date(2026, 6, 15, 12) });
+    manager.addEvent(series());
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    renderer = new Renderer(container, manager);
+    renderer.render();
+    return jest.spyOn(manager, 'updateEvent');
+  };
   afterEach(() => {
     renderer.cleanup();
     container.remove();
     manager.destroy();
   });
-
-  test('in the month view shifts the series by the dragged delta via a resolvable id', () => {
-    manager = new StateManager({ view: 'month', date: new Date(2026, 6, 15, 12) });
-    manager.addEvent(series());
-    container = document.createElement('div');
-    document.body.appendChild(container);
-    renderer = new MonthViewRenderer(container, manager);
-    renderer.render();
-    const cells = Array.from(container.querySelectorAll('.fc-month-day'));
-    mockRects(cells, (el, i) => {
-      const col = i % 7;
-      const row = Math.floor(i / 7);
-      return { left: col * 100, right: col * 100 + 100, top: row * 80, bottom: row * 80 + 80 };
-    });
-    const updateSpy = jest.spyOn(manager, 'updateEvent');
-
+  test.each([
+    ['month', MonthViewRenderer],
+    ['week', WeekViewRenderer],
+    ['day', DayViewRenderer]
+  ])('%s prevents pointer mutation while keeping selection available', (view, Renderer) => {
+    const update = mount(Renderer, view);
+    const before = manager.getEvents()[0].toObject();
     const chip = container.querySelector(`.fc-event[data-event-id="${occurrenceId(15)}"]`);
-    const originIdx = cells.indexOf(chip.closest('.fc-month-day'));
-    const targetIdx = originIdx + 2;
-    const x = (targetIdx % 7) * 100 + 50;
-    const y = Math.floor(targetIdx / 7) * 80 + 40;
-
-    expect(() => {
-      chip.dispatchEvent(pointer('pointerdown', 10, 10));
-      document.dispatchEvent(pointer('pointermove', x, y));
-      document.dispatchEvent(pointer('pointerup', x, y));
-    }).not.toThrow();
-
-    expect(updateSpy).toHaveBeenCalledTimes(1);
-    const [calledId] = updateSpy.mock.calls[0];
-    expect(manager.findEvent(calledId)).toBe(manager.getEvents()[0]);
-    const master = manager.getEvents()[0];
-    expect(master.id).toBe('standup');
-    expect(master.recurring).toBe(true);
-    expect(new Date(master.start)).toEqual(new Date(2026, 6, 3, 10, 0));
-    expect(new Date(master.end)).toEqual(new Date(2026, 6, 3, 11, 0));
-    expect(container.querySelectorAll('.fc-event[data-event-id^="standup_"]')).toHaveLength(5);
-  });
-
-  const mountWeek = () => {
-    manager = new StateManager({ view: 'week', date: new Date(2026, 6, 15, 12) });
-    manager.addEvent(series());
-    container = document.createElement('div');
-    document.body.appendChild(container);
-    renderer = new WeekViewRenderer(container, manager);
-    renderer.render();
-    mockRects(Array.from(container.querySelectorAll('.fc-week-day-column')), (el, i) => ({
-      left: i * 120,
-      right: i * 120 + 120,
-      top: 0,
-      bottom: 1440
-    }));
-    return jest.spyOn(manager, 'updateEvent');
-  };
-  const chipSelector = `.fc-timed-event[data-event-id="${occurrenceId(15)}"]`;
-
-  test('in the time grid moves the series by the snapped delta', () => {
-    const updateSpy = mountWeek();
-    const chip = container.querySelector(chipSelector);
     expect(chip).not.toBeNull();
-    const startX = chip.closest('.fc-week-day-column').getBoundingClientRect().left + 10;
-
-    expect(() => {
-      chip.dispatchEvent(pointer('pointerdown', startX, 600));
-      document.dispatchEvent(pointer('pointermove', startX, 600 + 34)); // ~30 min snap
-      document.dispatchEvent(pointer('pointerup', startX, 600 + 34));
-    }).not.toThrow();
-
-    const master = manager.getEvents()[0];
-    expect(new Date(master.start)).toEqual(new Date(2026, 6, 1, 10, 30));
-    expect(new Date(master.end)).toEqual(new Date(2026, 6, 1, 11, 30));
-    expect(updateSpy).toHaveBeenCalledTimes(1);
-    expect(manager.findEvent(updateSpy.mock.calls[0][0])).toBe(master);
+    expect(chip.querySelector('.fc-resize-handle')).toBeNull();
+    chip.dispatchEvent(pointer('pointerdown', 10, 600));
+    document.dispatchEvent(pointer('pointermove', 130, 690));
+    document.dispatchEvent(pointer('pointerup', 130, 690));
+    expect(renderer._dragController._active).toBeNull();
+    expect(renderer._dragController._docListeners).toHaveLength(0);
+    expect(chip.classList.contains('fc-dragging')).toBe(false);
+    expect(update).not.toHaveBeenCalled();
+    expect(manager.getEvents()[0].toObject()).toEqual(before);
+    chip.click();
+    expect(manager.getState().selectedEvent.id).toBe('standup');
   });
-
-  test('in the time grid resizing changes the duration of the series', () => {
-    const updateSpy = mountWeek();
-    const handle = container.querySelector(`${chipSelector} .fc-resize-handle`);
-    expect(handle).not.toBeNull();
-
-    expect(() => {
-      handle.dispatchEvent(pointer('pointerdown', 10, 660));
-      document.dispatchEvent(pointer('pointermove', 10, 660 + 29)); // ~30 min snap
-      document.dispatchEvent(pointer('pointerup', 10, 660 + 29));
-    }).not.toThrow();
-
+  test('commit methods reject a recurring master even with stale interaction state', () => {
+    const update = mount(WeekViewRenderer, 'week');
+    const controller = renderer._dragController;
     const master = manager.getEvents()[0];
-    expect(new Date(master.start)).toEqual(new Date(2026, 6, 1, 10, 0));
-    expect(new Date(master.end)).toEqual(new Date(2026, 6, 1, 11, 30));
-    expect(updateSpy).toHaveBeenCalledTimes(1);
-    expect(manager.findEvent(updateSpy.mock.calls[0][0])).toBe(master);
+    const column = container.querySelector('.fc-week-day-column');
+    controller._active = {
+      eventId: occurrenceId(15),
+      dropCell: { dataset: { date: '2026-07-18' } }
+    };
+    controller._monthDrop();
+    controller._active = { eventId: occurrenceId(15), deltaMinutes: 30, dropColumn: column };
+    controller._timeMoveDrop();
+    controller._active = { eventId: occurrenceId(15), newHeight: 90, originHeight: 60 };
+    controller._resizeDrop();
+    controller._shiftEvent(master, 60000);
+    expect(update).not.toHaveBeenCalled();
+    controller._active = null;
   });
+  test.each(['pointermove', 'pointerup'])(
+    'rechecks recurrence at %s and cancels an armed resize',
+    type => {
+      const update = mount(WeekViewRenderer, 'week');
+      const event = manager.addEvent({
+        id: 'single',
+        title: 'Single',
+        start: new Date(2026, 6, 15, 12),
+        end: new Date(2026, 6, 15, 13)
+      });
+      renderer.render();
+      update.mockClear();
+      const chip = container.querySelector('.fc-event[data-event-id="single"]');
+      const handle = chip.querySelector('.fc-resize-handle');
+      expect(handle).not.toBeNull();
+      const height = chip.style.height;
+      handle.dispatchEvent(pointer('pointerdown', 10, 780));
+      document.dispatchEvent(pointer('pointermove', 10, 810));
+      event.recurring = true; // Host mutates state while the pointer gesture is active.
+      document.dispatchEvent(pointer(type, 10, 830));
+      expect(renderer._dragController._active).toBeNull();
+      expect(chip.style.height).toBe(height);
+      expect(update).not.toHaveBeenCalled();
+    }
+  );
+  test.each(['recurring', 'recurrenceRule', 'isOccurrence', 'recurringEventId'])(
+    'shared guard recognizes %s',
+    flag => {
+      const update = mount(WeekViewRenderer, 'week');
+      const event = {
+        id: 'single',
+        [flag]: flag === 'recurring' || flag === 'isOccurrence' ? true : 'series'
+      };
+      renderer._dragController._shiftEvent(event, 60000);
+      expect(update).not.toHaveBeenCalled();
+    }
+  );
 });

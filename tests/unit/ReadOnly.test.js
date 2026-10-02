@@ -332,8 +332,9 @@ describe('ForceCalendar readOnly contract', () => {
       startDrag(element, 'create');
       document.dispatchEvent(pointer('pointerup', 10, 660));
       expect(range).toHaveBeenCalledTimes(1);
-      // EventForm.open() reflects its own open attribute, which invokes open() again.
-      expect(open).toHaveBeenCalledTimes(2);
+      // Reflecting the attribute must not recursively reset the form.
+      expect(open).toHaveBeenCalledTimes(1);
+      expect(modal.endInput.value).toBe(modal.formatDateForInput(range.mock.calls[0][0].detail.end));
       expect(modal.hasAttribute('open')).toBe(true);
     }
   );

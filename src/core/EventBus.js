@@ -23,7 +23,13 @@ class EventBus {
 
     // Handle wildcard subscriptions
     if (eventName.includes('*')) {
-      const subscription = { pattern: eventName, handler, once, priority };
+      const subscription = {
+        pattern: eventName,
+        regex: this.compilePattern(eventName),
+        handler,
+        once,
+        priority
+      };
       this.wildcardHandlers.add(subscription);
       return () => this.wildcardHandlers.delete(subscription);
     }
@@ -147,7 +153,7 @@ class EventBus {
     // Handle wildcard subscriptions (copy Set to avoid mutation during iteration)
     const toRemove = [];
     for (const subscription of [...this.wildcardHandlers]) {
-      if (this.matchesPattern(eventName, subscription.pattern)) {
+      if (subscription.regex.test(eventName)) {
         const { handler, once } = subscription;
 
         if (once) {
@@ -170,9 +176,13 @@ class EventBus {
    * Only `*` acts as a wildcard; all other characters match literally
    */
   matchesPattern(eventName, pattern) {
+    return this.compilePattern(pattern).test(eventName);
+  }
+
+  /** Compile a subscription pattern once; only * is a wildcard. */
+  compilePattern(pattern) {
     const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp('^' + escaped.replace(/\*/g, '.*') + '$');
-    return regex.test(eventName);
+    return new RegExp('^' + escaped.replace(/\*/g, '.*') + '$');
   }
 
   /**

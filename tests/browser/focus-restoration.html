@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Focus restoration browser regression</title>
+<h1>Focus restoration browser regression</h1>
+<pre id="results">Running…</pre>
+<script type="module">
+import { BaseComponent } from '../../src/core/BaseComponent.js';
+class Fixture extends BaseComponent {
+  template() { return '<section><button id="target">Focus target</button></section>'; }
+}
+customElements.define('fc-focus-browser-fixture', Fixture);
+const outcomes = [];
+const cases = [
+  ['visible fixed position', (el, target) => { target.style.position = 'fixed'; }, true],
+  ['hidden target', (el, target) => { target.hidden = true; }, false],
+  ['display none ancestor', (el, target) => { target.parentElement.style.display = 'none'; }, false],
+  ['visibility hidden target', (el, target) => { target.style.visibility = 'hidden'; }, false],
+  ['inert ancestor', (el, target) => { target.parentElement.inert = true; }, false],
+  ['aria-hidden ancestor', (el, target) => { target.parentElement.setAttribute('aria-hidden', 'true'); }, false],
+  ['hidden shadow host', el => { el.style.display = 'none'; }, false],
+  ['disabled target', (el, target) => { target.disabled = true; }, false],
+  ['removed target', (el, target) => { target.remove(); }, false]
+];
+for (const [name, prepare, expected] of cases) {
+  const element = document.createElement('fc-focus-browser-fixture');
+  document.body.appendChild(element);
+  const target = element.shadowRoot.querySelector('#target');
+  prepare(element, target);
+  let calls = 0;
+  const nativeFocus = target.focus.bind(target);
+  target.focus = () => { calls++; nativeFocus(); };
+  element._restoreFocus('#target');
+  const focused = element.shadowRoot.activeElement === target;
+  outcomes.push(`${calls === Number(expected) && focused === expected ? 'PASS' : 'FAIL'} ${name}`);
+  element.remove();
+}
+document.querySelector('#results').textContent = outcomes.join('\n');
+</script>
+</html>

@@ -234,12 +234,34 @@ export class BaseComponent extends HTMLElement {
     if (!selector || !this._contentWrapper) return;
     try {
       const el = this._contentWrapper.querySelector(selector);
-      if (el && typeof el.focus === 'function') {
+      if (el && typeof el.focus === 'function' && this._canRestoreFocus(el)) {
         el.focus();
       }
     } catch (_) {
       // Invalid selector, ignore
     }
+  }
+
+  /** Avoid restoring focus into hidden, inert, disabled, or detached content. */
+  _canRestoreFocus(element) {
+    if (!element.isConnected || element.matches(':disabled')) return false;
+    const view = element.ownerDocument.defaultView;
+    const style = view.getComputedStyle(element);
+    if (style.visibility === 'hidden' || style.visibility === 'collapse') return false;
+
+    // Walk through shadow hosts too: a visible child can still be inside a
+    // display:none or inert host. offsetParent is unsuitable for fixed elements.
+    for (let node = element; node; node = node.parentElement || node.getRootNode().host) {
+      if (
+        node.hidden ||
+        node.hasAttribute('inert') ||
+        node.getAttribute('aria-hidden') === 'true' ||
+        view.getComputedStyle(node).display === 'none'
+      ) {
+        return false;
+      }
+    }
+    return true;
   }
 
   template() {

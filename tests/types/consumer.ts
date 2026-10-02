@@ -3,6 +3,7 @@ import {
   BaseViewRenderer,
   DateUtils,
   ForceCalendar,
+  EventForm,
   StateManager,
   type CalendarEvent,
   type ForceCalendarElement
@@ -23,8 +24,19 @@ new BaseViewRenderer(document.createElement('div'), new StateManager());
 void base;
 void dates;
 
+element.showColorPicker = false;
+const showColorPicker: boolean = element.showColorPicker;
+const classShowColorPicker: boolean = new ForceCalendar().showColorPicker;
+void showColorPicker;
+void classShowColorPicker;
 element.readOnly = true;
 const readOnly: boolean = element.readOnly;
 const classReadOnly: boolean = new ForceCalendar().readOnly;
 void readOnly;
 void classReadOnly;
+
+const editor = new EventForm();
+editor.open(new Date(), new Date());
+editor.edit({ id: 'existing', title: 'Existing event', start: new Date(), end: new Date(), backgroundColor: null });
+editor.showError('Please try again');
+editor.close(false);
