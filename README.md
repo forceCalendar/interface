@@ -74,6 +74,16 @@ Click an event, or focus it and press Enter/Space, to open its details: title, t
 
 The standalone `EventForm` also supports `edit(event)` and `open(start, end)` for prefilled editing and creation ranges. Its cancellable `save` event carries editable fields; a host can call `preventDefault()` and `showError(message)` to retain a failed draft. Its `close` event reports `{ restoreFocus }`. The main calendar wires these to its state manager automatically.
 
+## All-day date boundaries
+
+All-day editing uses date-only **Start date** and **Last day (inclusive)** fields.
+A same-day event uses the same date in both fields. This preserves Core's existing
+contract: local start-of-day through local 23:59:59.999 on the last included day.
+Dates are parsed as local civil dates, not UTC strings; DST days may span 23 or 25
+hours. Timed events retain exact instants, including unchanged DST-overlap times.
+Adapters for systems with an exclusive end date must convert that boundary using
+calendar-day arithmetic rather than a fixed 24-hour duration.
+
 ## Optional editor color control
 
 The color picker remains visible by default. Hosts that cannot persist colors can use

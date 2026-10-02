@@ -353,6 +353,7 @@ export class EventForm extends BaseComponent {
     this.addListener(this.$('#close-x'), 'click', () => this.close());
     this.addListener(this.$('#cancel-btn'), 'click', () => this.close());
     this.addListener(this.$('#save-btn'), 'click', () => this.save());
+    this.addListener(this.allDayInput, 'change', () => this._syncDateInputMode());
 
     this.colorContainer.querySelectorAll('.color-btn').forEach(btn => {
       this.addListener(btn, 'click', e => {
@@ -442,8 +443,17 @@ export class EventForm extends BaseComponent {
     this.titleInput.value = this._formData.title;
     this.locationInput.value = this._formData.location;
     this.allDayInput.checked = this._formData.allDay;
-    this.startInput.value = this.formatDateForInput(this._formData.start);
-    this.endInput.value = this.formatDateForInput(this._formData.end);
+    this._timedDraft = null;
+    this.startInput.type = this.endInput.type = this._formData.allDay ? 'date' : 'datetime-local';
+    this.startInput.value = this.formatDateForInput(this._formData.start).slice(
+      0,
+      this._formData.allDay ? 10 : undefined
+    );
+    this.endInput.value = this.formatDateForInput(this._formData.end).slice(
+      0,
+      this._formData.allDay ? 10 : undefined
+    );
+    this._updateDateLabels();
     this._initialStartInput = this.startInput.value;
     this._initialEndInput = this.endInput.value;
     this._resetErrors();
@@ -488,16 +498,92 @@ export class EventForm extends BaseComponent {
     error.hidden = false;
   }
 
+  _updateDateLabels() {
+    this.$('label[for="event-start"]').textContent = this.allDayInput.checked
+      ? 'Start date'
+      : 'Start';
+    this.$('label[for="event-end"]').textContent = this.allDayInput.checked
+      ? 'Last day (inclusive)'
+      : 'End';
+    this.$('#end-error').textContent = this.allDayInput.checked
+      ? 'Choose a last day on or after the start date'
+      : 'Enter a valid end time after the start time';
+  }
+
+  _syncDateInputMode() {
+    const allDay = this.allDayInput.checked;
+    const startValue = this.startInput.value;
+    const endValue = this.endInput.value;
+    if (allDay && this.startInput.type !== 'date') {
+      this._timedDraft = { start: startValue, end: endValue };
+      this.startInput.type = this.endInput.type = 'date';
+      this.startInput.value = startValue.slice(0, 10);
+      this.endInput.value = endValue.slice(0, 10);
+    } else if (!allDay && this.startInput.type === 'date') {
+      this.startInput.type = this.endInput.type = 'datetime-local';
+      // Restore the previous timed draft when toggling back. For an existing
+      // all-day event, default to sensible local working hours instead.
+      this.startInput.value = startValue
+        ? `${startValue}T${this._timedDraft?.start.slice(11) || '09:00'}`
+        : '';
+      this.endInput.value = endValue
+        ? `${endValue}T${this._timedDraft?.end.slice(11) || '10:00'}`
+        : '';
+      if (
+        this.startInput.value &&
+        this.endInput.value &&
+        new Date(this.endInput.value) <= new Date(this.startInput.value)
+      ) {
+        this.endInput.value = this.formatDateForInput(
+          new Date(new Date(this.startInput.value).getTime() + this.config.defaultDuration * 60000)
+        );
+      }
+    }
+    this._updateDateLabels();
+  }
+
+  _readInputDates() {
+    const allDay = this.allDayInput.checked;
+    const read = (input, field, initial) => {
+      // Unchanged timed inputs preserve sub-minute precision and DST-fold
+      // identity. All-day values are civil dates with inclusive end dates.
+      if (
+        !allDay &&
+        this.editingEventId !== null &&
+        allDay === this._formData.allDay &&
+        input.value === initial
+      ) {
+        return new Date(this._formData[field]);
+      }
+      if (!allDay) return new Date(input.value);
+      const match = /^(\d{4,})-(\d{2})-(\d{2})$/.exec(input.value);
+      if (!match) return new Date(NaN);
+      const date = new Date(0);
+      date.setFullYear(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+      date.setHours(
+        field === 'end' ? 23 : 0,
+        field === 'end' ? 59 : 0,
+        field === 'end' ? 59 : 0,
+        field === 'end' ? 999 : 0
+      );
+      if (
+        date.getFullYear() !== Number(match[1]) ||
+        date.getMonth() !== Number(match[2]) - 1 ||
+        date.getDate() !== Number(match[3])
+      )
+        return new Date(NaN);
+      return date;
+    };
+    return {
+      start: read(this.startInput, 'start', this._initialStartInput),
+      end: read(this.endInput, 'end', this._initialEndInput)
+    };
+  }
+
   validate() {
+    this._syncDateInputMode();
     this._resetErrors();
-    const start =
-      this.editingEventId !== null && this.startInput.value === this._initialStartInput
-        ? new Date(this._formData.start)
-        : new Date(this.startInput.value);
-    const end =
-      this.editingEventId !== null && this.endInput.value === this._initialEndInput
-        ? new Date(this._formData.end)
-        : new Date(this.endInput.value);
+    const { start, end } = this._readInputDates();
     let firstInvalid = null;
     const checks = [
       [this.titleGroup, this.titleInput, !this.titleInput.value.trim()],
@@ -521,16 +607,7 @@ export class EventForm extends BaseComponent {
       title: this.titleInput.value.trim(),
       location: this.locationInput.value.trim(),
       allDay: this.allDayInput.checked,
-      // Minute inputs cannot represent seconds, milliseconds or the second
-      // instance of a repeated DST hour. Untouched inputs retain exact instants.
-      start:
-        this.editingEventId !== null && this.startInput.value === this._initialStartInput
-          ? new Date(this._formData.start)
-          : new Date(this.startInput.value),
-      end:
-        this.editingEventId !== null && this.endInput.value === this._initialEndInput
-          ? new Date(this._formData.end)
-          : new Date(this.endInput.value),
+      ...this._readInputDates(),
       backgroundColor:
         this.editingEventId !== null && !this._colorChanged
           ? this._originalBackgroundColor

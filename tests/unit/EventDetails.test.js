@@ -238,7 +238,7 @@ describe('built-in event details and editing', () => {
       end: new Date('2026-11-01T06:15:00Z')
     };
     const calendar = create('month', []);
-    calendar.setDate(new Date(2026, 10, 1, 12));
+    calendar.setDate(new Date(input.start));
     calendar.events = [input];
     const editor = edit(calendar);
     editor.titleInput.value = 'DST event';
