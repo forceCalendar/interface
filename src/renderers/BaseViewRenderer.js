@@ -8,6 +8,8 @@
 import { DOMUtils } from '../utils/DOMUtils.js';
 import { StyleUtils } from '../utils/StyleUtils.js';
 
+/** @typedef {import('../core/StateManager.js').default} StateManager */
+
 export class BaseViewRenderer {
   /**
    * @param {HTMLElement} container - The DOM element to render into

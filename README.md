@@ -68,9 +68,9 @@ calendar.addEventListener('calendar-range-change', async e => {
 
 ## Lifecycle: detach and destroy
 
-Removing the element from the document releases its rendered tree, DOM listeners and timers but keeps its state (view, date, events) and keeps dispatching `calendar-*` events for API calls, so a re-attach (framework reconciliation, portals, StrictMode double-mount) picks up where it left off. Attribute changes made while detached are applied to state and rendered on the next attach.
+Removing the element from the document releases its rendered tree, DOM listeners and view timers but keeps its state (view, date, events) and keeps dispatching `calendar-*` events for API calls, so a re-attach (framework reconciliation, portals, StrictMode double-mount) picks up where it left off. Attribute changes made while detached are applied to state and rendered on the next attach.
 
-`destroy()` tears the state manager down. Afterwards the public API no-ops or queues instead of throwing (`events` is `[]`, `getVisibleRange()` is `null`, `setEvents()` queues) and the next attach initialises a fresh calendar from the attributes and any queued snapshot.
+`destroy()` tears the state manager and its owned Core Calendar down, including background maintenance timers (use Core 2.5.4 or later for full timer cleanup). Call it when you are finished with an element permanently; detaching alone intentionally preserves the calendar. Repeated calls are safe. Afterwards the public API no-ops or queues instead of throwing (`events` and `getEvents()` read the queued snapshot, `getVisibleRange()` is `null`, `setEvents()` queues, CRUD mutations return `null`/`false`, and navigation no-ops) and the next attach initialises a fresh calendar from the attributes and any queued snapshot.
 
 ## Events
 

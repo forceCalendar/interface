@@ -913,6 +913,11 @@ class StateManager {
 
   // Destroy
   destroy() {
+    // This manager owns the Calendar and its background maintenance timers.
+    // Release it before dropping the reference, including on repeated teardown.
+    if (this.calendar) {
+      this.calendar.destroy();
+    }
     this.subscribers.clear();
     if (this._subscriberIds) {
       this._subscriberIds.clear();

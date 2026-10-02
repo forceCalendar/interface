@@ -1102,19 +1102,19 @@ export class ForceCalendar extends BaseComponent {
 
   // Public API methods
   addEvent(event) {
-    return this.stateManager.addEvent(event);
+    return this._isInitialised() ? this.stateManager.addEvent(event) : null;
   }
 
   updateEvent(eventId, updates) {
-    return this.stateManager.updateEvent(eventId, updates);
+    return this._isInitialised() ? this.stateManager.updateEvent(eventId, updates) : null;
   }
 
   deleteEvent(eventId) {
-    return this.stateManager.deleteEvent(eventId);
+    return this._isInitialised() ? this.stateManager.deleteEvent(eventId) : false;
   }
 
   getEvents() {
-    return this.stateManager.getEvents();
+    return this.events;
   }
 
   /**
@@ -1185,22 +1185,27 @@ export class ForceCalendar extends BaseComponent {
   }
 
   setView(view) {
+    if (!this._isInitialised()) return;
     this.stateManager.setView(this._resolveView(view, this.stateManager.getView()));
   }
 
   setDate(date) {
+    if (!this._isInitialised()) return;
     this.stateManager.setDate(date);
   }
 
   next() {
+    if (!this._isInitialised()) return;
     this.stateManager.next();
   }
 
   previous() {
+    if (!this._isInitialised()) return;
     this.stateManager.previous();
   }
 
   today() {
+    if (!this._isInitialised()) return;
     this.stateManager.today();
   }
 

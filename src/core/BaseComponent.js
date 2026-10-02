@@ -257,6 +257,7 @@ export class BaseComponent extends HTMLElement {
   }
 
   // Attribute observation
+  /** @returns {string[]} */
   static get observedAttributes() {
     return [];
   }
