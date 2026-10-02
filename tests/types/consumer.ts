@@ -3,6 +3,7 @@ import {
   BaseViewRenderer,
   DateUtils,
   ForceCalendar,
+  EventForm,
   StateManager,
   type CalendarEvent,
   type ForceCalendarElement
@@ -28,3 +29,9 @@ const readOnly: boolean = element.readOnly;
 const classReadOnly: boolean = new ForceCalendar().readOnly;
 void readOnly;
 void classReadOnly;
+
+const editor = new EventForm();
+editor.open(new Date(), new Date());
+editor.edit({ id: 'existing', title: 'Existing event', start: new Date(), end: new Date(), backgroundColor: null });
+editor.showError('Please try again');
+editor.close(false);

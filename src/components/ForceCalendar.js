@@ -17,6 +17,7 @@ import { DayViewRenderer } from '../renderers/DayViewRenderer.js';
 
 // Import EventForm component (registers custom element as side effect)
 import './EventForm.js';
+import { EventDetails } from './EventDetails.js';
 
 export class ForceCalendar extends BaseComponent {
   static RENDERERS = {
@@ -89,7 +90,7 @@ export class ForceCalendar extends BaseComponent {
     switch (name) {
       case 'readonly':
         // Close the editor before replacing its DOM and release its focus trap.
-        if (this.readOnly) this.$('#event-modal')?.close();
+        if (this.readOnly) this._closeEventInteractions();
         this.stateManager.updateConfig({ readOnly: this.readOnly });
         break;
       case 'view':
@@ -290,6 +291,8 @@ export class ForceCalendar extends BaseComponent {
       // Events changed: only re-render view content
       this._updateViewContent();
     }
+    if (viewChanged || dateChanged) this._closeEventInteractions();
+    else if (eventsChanged && !this._savingEvent) this._syncEventInteraction();
     // Selection changes are handled by the view internally, no action needed here
   }
 
@@ -384,7 +387,95 @@ export class ForceCalendar extends BaseComponent {
     // Nothing to draw without a state manager (after destroy() while the
     // element is still attached); the next attach initialises and renders
     if (!this._isInitialised()) return;
+    this._closeEventInteractions(false);
+    this._eventDetails?.destroy();
+    this._eventDetails = null;
     super.render();
+  }
+
+  _eventFingerprint(event) {
+    return JSON.stringify([
+      event.title,
+      +new Date(event.start),
+      +new Date(event.end),
+      event.location,
+      event.allDay,
+      event.backgroundColor,
+      EventDetails.isRecurring(event)
+    ]);
+  }
+
+  _editableInteraction() {
+    if (this.readOnly || !this._isInitialised() || !this._eventInteraction) return null;
+    const context = this._eventInteraction;
+    const event = this.stateManager.findEvent(context.masterId);
+    return event &&
+      !context.stale &&
+      !EventDetails.isRecurring(event) &&
+      this._eventFingerprint(event) === context.fingerprint
+      ? event
+      : null;
+  }
+
+  _syncEventInteraction() {
+    const context = this._eventInteraction;
+    if (!context) return;
+    const current = this.stateManager.findEvent(context.masterId);
+    if (current && this._eventFingerprint(current) === context.fingerprint) {
+      const anchor = [...this.$$('.fc-event')].find(el => el.dataset.eventId === context.eventId);
+      if (anchor) {
+        context.anchor = anchor;
+        if (this._eventDetails) this._eventDetails.anchor = anchor;
+      }
+      return;
+    }
+    context.stale = true;
+    const modal = this.$('#event-modal');
+    if (modal?.hasAttribute('open') && modal.editingEventId !== null) {
+      modal.showError(
+        'This event changed or was removed. Close this form and reopen the event before editing.'
+      );
+    } else {
+      this._eventDetails?.close();
+    }
+  }
+
+  _deleteInteraction() {
+    const event = this._editableInteraction();
+    if (!event) {
+      this._closeEventInteractions();
+      return;
+    }
+    this._savingEvent = true;
+    try {
+      if (this.stateManager.deleteEvent(event.id)) this._eventDetails?.close();
+      else this._eventDetails?.showError('The event could not be deleted. Please try again.');
+    } catch (_) {
+      this._eventDetails?.showError('The event could not be deleted. Please try again.');
+    } finally {
+      this._savingEvent = false;
+    }
+  }
+
+  _restoreEventFocus() {
+    const context = this._eventInteraction;
+    if (!context) return;
+    this._eventInteraction = null;
+    if (!this.isConnected) return;
+    // Compare data values rather than interpolating host-provided ids into CSS.
+    const chip = [...this.$$('.fc-event')].find(el => el.dataset.eventId === context.eventId);
+    const target =
+      chip ||
+      (context.anchor?.isConnected ? context.anchor : null) ||
+      this.$('[data-action="today"]');
+    if (DOMUtils.canRestoreFocus(target)) target.focus();
+  }
+
+  _closeEventInteractions(restoreFocus = true) {
+    this._eventDetails?.close(false);
+    this.$('#event-modal')?.close(false);
+    if (restoreFocus) this._restoreEventFocus();
+    else this._eventInteraction = null;
   }
 
   loadView(viewType) {
@@ -403,6 +494,7 @@ export class ForceCalendar extends BaseComponent {
             ${StyleUtils.getButtonStyles()}
             ${StyleUtils.getGridStyles()}
             ${StyleUtils.getAnimations()}
+            ${EventDetails.getStyles()}
 
             :host {
                 --calendar-height: ${height};
@@ -897,6 +989,7 @@ export class ForceCalendar extends BaseComponent {
                     </div>
                 </div>
                 
+                <div id="event-details" class="fc-details-overlay" hidden></div>
                 <forcecal-event-form id="event-modal"></forcecal-event-form>
             </div>
         `;
@@ -981,13 +1074,17 @@ export class ForceCalendar extends BaseComponent {
 
     if (createBtn && modal) {
       this.addListener(createBtn, 'click', () => {
-        if (!this.readOnly) modal.open(new Date());
+        if (!this.readOnly) {
+          this._closeEventInteractions(false);
+          modal.open(new Date());
+        }
       });
     }
 
     // Listen for day clicks from the view
     this.addListener(this.shadowRoot, 'day-click', e => {
       if (modal && !this.readOnly) {
+        this._closeEventInteractions(false);
         modal.open(e.detail.date);
       }
     });
@@ -998,25 +1095,88 @@ export class ForceCalendar extends BaseComponent {
       this.emit('calendar-range-select', e.detail);
       // A host listener may have toggled readOnly or replaced the view.
       if (modal?.isConnected && !this.readOnly) {
-        modal.open(e.detail.start);
+        this._closeEventInteractions(false);
+        modal.open(e.detail.start, e.detail.end);
       }
     });
 
-    // Handle event saving
-    if (modal) {
-      this.addListener(modal, 'save', e => {
-        if (this.readOnly || !this._isInitialised()) return;
-        const eventData = e.detail;
-        // Robust Safari support check for randomUUID
-        const id =
-          window.crypto && typeof window.crypto.randomUUID === 'function'
-            ? window.crypto.randomUUID()
-            : Math.random().toString(36).substring(2, 15);
+    const detailsContainer = this.$('#event-details');
+    if (detailsContainer) {
+      this._eventDetails = new EventDetails(detailsContainer, {
+        onEdit: () => {
+          const event = this._editableInteraction();
+          if (!event || !modal) return;
+          this._eventDetails.close(false);
+          modal.edit(event);
+        },
+        onDelete: () => this._deleteInteraction(),
+        onClose: restoreFocus => {
+          if (restoreFocus) this._restoreEventFocus();
+        }
+      });
+    }
+    this.addListener(this.shadowRoot, 'event-activate', e => {
+      const { eventId, anchor } = e.detail;
+      const instance = this.stateManager.resolveEventInstance(eventId);
+      if (!instance || !anchor?.isConnected || !this._eventDetails) return;
+      this._closeEventInteractions(false);
+      this._eventInteraction = {
+        eventId,
+        anchor,
+        masterId: instance.event.id,
+        fingerprint: this._eventFingerprint(instance.event)
+      };
+      this._eventDetails.open(
+        instance,
+        anchor,
+        this.readOnly,
+        this.stateManager.getState().config.locale
+      );
+    });
 
-        this.stateManager.addEvent({
-          id,
-          ...eventData
-        });
+    if (modal) {
+      this.addListener(modal, 'close', e => {
+        if (e.detail.restoreFocus) this._restoreEventFocus();
+      });
+      this.addListener(modal, 'save', e => {
+        if (this.readOnly || !this._isInitialised() || !modal.isConnected) {
+          e.preventDefault();
+          return;
+        }
+        const editing = modal.editingEventId !== null;
+        const existing = editing ? this._editableInteraction() : null;
+        if (editing && (!existing || existing.id !== modal.editingEventId)) {
+          e.preventDefault();
+          modal.showError(
+            'This event changed or was removed. Close this form and reopen the event before editing.'
+          );
+          return;
+        }
+        this._savingEvent = true;
+        try {
+          // Only pass editable fields. Core retains description, metadata,
+          // external ids and other host-owned event properties on update.
+          const { title, start, end, location, allDay, backgroundColor } = e.detail;
+          const patch = { title, start, end, location, allDay, backgroundColor };
+          const result = editing
+            ? this.stateManager.updateEvent(existing.id, {
+                ...patch,
+                endTimeZone: existing.endTimeZone
+              })
+            : this.stateManager.addEvent({
+                id:
+                  window.crypto && typeof window.crypto.randomUUID === 'function'
+                    ? window.crypto.randomUUID()
+                    : Math.random().toString(36).substring(2, 15),
+                ...patch
+              });
+          if (!result) throw new Error('Event could not be saved');
+        } catch (_) {
+          e.preventDefault();
+          modal.showError('The event could not be saved. Check its details and try again.');
+        } finally {
+          this._savingEvent = false;
+        }
       });
     }
 
@@ -1257,6 +1417,9 @@ export class ForceCalendar extends BaseComponent {
   }
 
   _releaseBindings() {
+    this._closeEventInteractions(false);
+    this._eventDetails?.destroy();
+    this._eventDetails = null;
     this._cancelInitialRangeAnnouncement();
 
     if (this._stateUnsubscribe) {

@@ -338,6 +338,17 @@ export class BaseViewRenderer {
     const event = this.stateManager.findEvent(eventId);
     if (event) {
       this.stateManager.selectEvent(event);
+      // Keep the occurrence id and invoking node: the selected master alone
+      // loses the clicked instance's date and the keyboard return target.
+      if (this.container.contains(eventEl)) {
+        this.container.dispatchEvent(
+          new CustomEvent('event-activate', {
+            detail: { eventId, anchor: eventEl },
+            bubbles: true,
+            composed: true
+          })
+        );
+      }
     }
   }
 

@@ -2,10 +2,23 @@ import { BaseComponent } from '../core/BaseComponent.js';
 import { StyleUtils } from '../utils/StyleUtils.js';
 import { DOMUtils } from '../utils/DOMUtils.js';
 
+/**
+ * @typedef {Object} EditableEvent
+ * @property {string} id
+ * @property {Date|string} start
+ * @property {Date|string} end
+ * @property {string} [title]
+ * @property {string} [location]
+ * @property {boolean} [allDay]
+ * @property {string|null} [backgroundColor]
+ */
+
 export class EventForm extends BaseComponent {
   constructor() {
     super();
     this._isVisible = false;
+    /** @type {string|null} */
+    this.editingEventId = null;
     this._cleanupFocusTrap = null;
     this.config = {
       title: 'New Event',
@@ -33,7 +46,7 @@ export class EventForm extends BaseComponent {
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
-    if (name === 'open') {
+    if (name === 'open' && oldValue !== newValue && !this._reflectingOpen) {
       if (newValue !== null) {
         this.open();
       } else {
@@ -231,7 +244,7 @@ export class EventForm extends BaseComponent {
     return `
             <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modal-title">
                 <header class="modal-header">
-                    <h3 class="modal-title" id="modal-title">${this.config.title}</h3>
+                    <h3 class="modal-title" id="modal-title">${DOMUtils.escapeHTML(this.config.title)}</h3>
                     <button class="close-btn" id="close-x" aria-label="Close modal">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M18 6L6 18M6 6l12 12"></path>
@@ -242,19 +255,28 @@ export class EventForm extends BaseComponent {
                 <div class="modal-body">
                     <div class="form-group" id="title-group">
                         <label for="event-title">Title</label>
-                        <input type="text" id="event-title" placeholder="Event name" autofocus required>
-                        <span class="error-message">Title is required</span>
+                        <input type="text" id="event-title" placeholder="Event name" aria-describedby="title-error" required>
+                        <span class="error-message" id="title-error">Title is required</span>
                     </div>
 
+                    <div class="form-group">
+                        <label for="event-location">Location</label>
+                        <input type="text" id="event-location" placeholder="Add a location">
+                    </div>
+                    <div class="form-group">
+                        <label><input type="checkbox" id="event-all-day"> All day</label>
+                    </div>
+                    <p id="save-error" role="alert" hidden></p>
                     <div class="row">
                         <div class="form-group" id="start-group">
                             <label for="event-start">Start</label>
-                            <input type="datetime-local" id="event-start" required>
+                            <input type="datetime-local" id="event-start" aria-describedby="start-error" required>
+                            <span class="error-message" id="start-error">Enter a valid start time</span>
                         </div>
                         <div class="form-group" id="end-group">
                             <label for="event-end">End</label>
-                            <input type="datetime-local" id="event-end" required>
-                            <span class="error-message">End time must be after start time</span>
+                            <input type="datetime-local" id="event-end" aria-describedby="end-error" required>
+                            <span class="error-message" id="end-error">Enter a valid end time after the start time</span>
                         </div>
                     </div>
 
@@ -291,11 +313,14 @@ export class EventForm extends BaseComponent {
     // Bind elements
     this.modalContent = this.$('.modal-content');
     this.titleInput = this.$('#event-title');
+    this.locationInput = this.$('#event-location');
+    this.allDayInput = this.$('#event-all-day');
     this.startInput = this.$('#event-start');
     this.endInput = this.$('#event-end');
     this.colorContainer = this.$('#color-picker');
 
     this.titleGroup = this.$('#title-group');
+    this.startGroup = this.$('#start-group');
     this.endGroup = this.$('#end-group');
 
     // Event Listeners using addListener for automatic cleanup
@@ -306,6 +331,7 @@ export class EventForm extends BaseComponent {
     this.colorContainer.querySelectorAll('.color-btn').forEach(btn => {
       this.addListener(btn, 'click', e => {
         this._formData.color = e.currentTarget.dataset.color;
+        this._colorChanged = true;
         this.updateColorSelection();
       });
     });
@@ -316,16 +342,15 @@ export class EventForm extends BaseComponent {
       if (!e.composedPath().includes(this.modalContent)) this.close();
     });
 
-    // Close on Escape key - only add once to prevent memory leaks
-    if (!this._keydownListenerAdded) {
-      this._handleKeyDown = e => {
-        if (e.key === 'Escape' && this.hasAttribute('open')) {
-          this.close();
-        }
-      };
-      window.addEventListener('keydown', this._handleKeyDown);
-      this._keydownListenerAdded = true;
-    }
+    // Scope dismissal to this dialog: another calendar's Escape must not close it.
+    this.addListener(this, 'keydown', e => {
+      if (e.key === 'Escape' && this.hasAttribute('open')) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.close();
+      }
+    });
+    if (this.hasAttribute('open')) this.open();
   }
 
   updateColorSelection() {
@@ -337,80 +362,162 @@ export class EventForm extends BaseComponent {
     });
   }
 
-  open(initialDate = new Date()) {
-    if (!this.hasAttribute('open')) {
-      this.setAttribute('open', '');
-    }
-
-    // Reset errors
-    this.titleGroup.classList.remove('has-error');
-    this.endGroup.classList.remove('has-error');
-
-    // Initialize form data
-    this._formData.start = initialDate;
-    this._formData.end = new Date(initialDate.getTime() + this.config.defaultDuration * 60 * 1000);
-    this._formData.title = '';
-    this._formData.color = this.config.colors[0].color;
-
-    // Update inputs
-    if (this.startInput) {
-      this.titleInput.value = '';
-      this.startInput.value = this.formatDateForInput(this._formData.start);
-      this.endInput.value = this.formatDateForInput(this._formData.end);
-      this.updateColorSelection();
-
-      // Clean up previous focus trap before creating a new one
-      if (this._cleanupFocusTrap) {
-        this._cleanupFocusTrap();
-      }
-      this._cleanupFocusTrap = DOMUtils.trapFocus(this.modalContent);
-    }
+  /**
+   * @param {Date} [initialDate]
+   * @param {Date|null} [initialEnd]
+   */
+  open(initialDate = new Date(), initialEnd = null) {
+    this.editingEventId = null;
+    this._show({
+      title: '',
+      location: '',
+      allDay: false,
+      start: new Date(initialDate),
+      end: initialEnd
+        ? new Date(initialEnd)
+        : new Date(initialDate.getTime() + this.config.defaultDuration * 60000),
+      backgroundColor: this.config.colors[0].color
+    });
   }
 
-  close() {
+  /**
+   * Prefill an existing event without modifying it or copying its metadata into the patch.
+   * @param {EditableEvent} event
+   */
+  edit(event) {
+    this.editingEventId = event.id;
+    this._show(event);
+  }
+
+  _show(event) {
+    if (!this.isConnected || !this.modalContent?.isConnected) return;
+    if (!this._isVisible) this._returnFocus = this.getRootNode().activeElement;
+    this._isVisible = true;
+    this._reflectingOpen = true;
+    this.setAttribute('open', '');
+    this._reflectingOpen = false;
+    this._originalBackgroundColor = event.backgroundColor;
+    this._colorChanged = false;
+    this._formData = {
+      title: event.title || '',
+      location: event.location || '',
+      allDay: Boolean(event.allDay),
+      start: new Date(event.start),
+      end: new Date(event.end),
+      color: event.backgroundColor || this.config.colors[0].color
+    };
+    this.$('#modal-title').textContent =
+      this.editingEventId === null ? this.config.title : 'Edit Event';
+    this.titleInput.value = this._formData.title;
+    this.locationInput.value = this._formData.location;
+    this.allDayInput.checked = this._formData.allDay;
+    this.startInput.value = this.formatDateForInput(this._formData.start);
+    this.endInput.value = this.formatDateForInput(this._formData.end);
+    this._initialStartInput = this.startInput.value;
+    this._initialEndInput = this.endInput.value;
+    this._resetErrors();
+    this.updateColorSelection();
+    this._cleanupFocusTrap?.();
+    this._cleanupFocusTrap = DOMUtils.trapFocus(this.modalContent);
+    this.titleInput.focus();
+  }
+
+  close(restoreFocus = true) {
+    const wasVisible = this._isVisible;
+    this._isVisible = false;
+    this._reflectingOpen = true;
     this.removeAttribute('open');
-    if (this._cleanupFocusTrap) {
-      this._cleanupFocusTrap();
-      this._cleanupFocusTrap = null;
+    this._reflectingOpen = false;
+    this._cleanupFocusTrap?.();
+    this._cleanupFocusTrap = null;
+    if (wasVisible) {
+      if (restoreFocus && DOMUtils.canRestoreFocus(this._returnFocus)) this._returnFocus.focus();
+      this._returnFocus = null;
+      this.emit('close', { restoreFocus });
     }
+    this.editingEventId = null;
+  }
+
+  _resetErrors() {
+    for (const [group, input] of [
+      [this.titleGroup, this.titleInput],
+      [this.startGroup, this.startInput],
+      [this.endGroup, this.endInput]
+    ]) {
+      group.classList.remove('has-error');
+      input.removeAttribute('aria-invalid');
+    }
+    this.$('#save-error').hidden = true;
+  }
+
+  /** @param {string} message */
+  showError(message) {
+    const error = this.$('#save-error');
+    error.textContent = message;
+    error.hidden = false;
   }
 
   validate() {
-    let isValid = true;
-
-    // Reset errors
-    this.titleGroup.classList.remove('has-error');
-    this.endGroup.classList.remove('has-error');
-
-    // Check title
-    if (!this.titleInput.value.trim()) {
-      this.titleGroup.classList.add('has-error');
-      isValid = false;
+    this._resetErrors();
+    const start =
+      this.editingEventId !== null && this.startInput.value === this._initialStartInput
+        ? new Date(this._formData.start)
+        : new Date(this.startInput.value);
+    const end =
+      this.editingEventId !== null && this.endInput.value === this._initialEndInput
+        ? new Date(this._formData.end)
+        : new Date(this.endInput.value);
+    let firstInvalid = null;
+    const checks = [
+      [this.titleGroup, this.titleInput, !this.titleInput.value.trim()],
+      [this.startGroup, this.startInput, !Number.isFinite(start.getTime())],
+      [this.endGroup, this.endInput, !Number.isFinite(end.getTime()) || end <= start]
+    ];
+    for (const [group, input, invalid] of checks) {
+      if (invalid) {
+        group.classList.add('has-error');
+        input.setAttribute('aria-invalid', 'true');
+        firstInvalid ||= input;
+      }
     }
-
-    // Check date range
-    const start = new Date(this.startInput.value);
-    const end = new Date(this.endInput.value);
-    if (end <= start) {
-      this.endGroup.classList.add('has-error');
-      isValid = false;
-    }
-
-    return isValid;
+    firstInvalid?.focus();
+    return !firstInvalid;
   }
 
   save() {
-    if (!this.validate()) return;
-
+    if (!this._isVisible || !this.validate()) return;
     const event = {
       title: this.titleInput.value.trim(),
-      start: new Date(this.startInput.value),
-      end: new Date(this.endInput.value),
-      backgroundColor: this._formData.color
+      location: this.locationInput.value.trim(),
+      allDay: this.allDayInput.checked,
+      // Minute inputs cannot represent seconds, milliseconds or the second
+      // instance of a repeated DST hour. Untouched inputs retain exact instants.
+      start:
+        this.editingEventId !== null && this.startInput.value === this._initialStartInput
+          ? new Date(this._formData.start)
+          : new Date(this.startInput.value),
+      end:
+        this.editingEventId !== null && this.endInput.value === this._initialEndInput
+          ? new Date(this._formData.end)
+          : new Date(this.endInput.value),
+      backgroundColor:
+        this.editingEventId !== null && !this._colorChanged
+          ? this._originalBackgroundColor
+          : this._formData.color
     };
-
-    this.emit('save', event);
-    this.close();
+    // The calendar may reject a stale edit or report a storage/validation error.
+    // Leave the user's draft visible when the listener cancels the save.
+    if (
+      this.dispatchEvent(
+        new CustomEvent('save', {
+          detail: event,
+          bubbles: true,
+          composed: true,
+          cancelable: true
+        })
+      )
+    )
+      this.close();
   }
 
   formatDateForInput(date) {
@@ -426,15 +533,7 @@ export class EventForm extends BaseComponent {
   }
 
   unmount() {
-    if (this._cleanupFocusTrap) {
-      this._cleanupFocusTrap();
-    }
-    // Clean up window listener
-    if (this._handleKeyDown) {
-      window.removeEventListener('keydown', this._handleKeyDown);
-      this._handleKeyDown = null;
-      this._keydownListenerAdded = false;
-    }
+    this.close(false);
   }
 }
 

@@ -54,6 +54,18 @@ Rules of the road:
 
 Rendered chips of a recurring series carry occurrence ids (`<masterId>_<startMs>`). Clicking, selecting, dragging or resizing an occurrence resolves to the series master (`stateManager.findEvent(id)`), so `calendar-event-update` and the selection always carry the master event. There is no per-occurrence edit yet: dragging an occurrence shifts the whole series by the dragged delta (a change of date and time of day for every occurrence) and resizing one changes the duration of every occurrence.
 
+## Event details and editing
+
+Click an event, or focus it and press Enter/Space, to open its details: title, the displayed instance's date/time, location and available actions. Times use the browser's local display, as the calendar grid does. The calendar-owned dialog uses ordinary DOM nodes inside the calendar's shadow root, without a portal or the native Popover API.
+
+- **Edit** prefills the existing event. Save updates its stable id and emits the normal `calendar-event-update` / `calendar-event-updated` pair; it does not add a duplicate. Description, attendees, metadata and other host-owned fields are retained. Unchanged date inputs preserve the original full-precision instants, including DST-overlap times.
+- **Delete** first opens an explicit confirmation. Cancel or Escape returns to details; confirming emits the normal remove/deleted pair. Failed saves/deletes leave the draft or confirmation available to retry.
+- Close, backdrop click and Escape dismiss details; Tab stays inside the dialog and focus returns to the event (or Today after deletion). Cancelling the editor discards its draft. Navigation, teardown and enabling read-only mode dismiss active interactions.
+- If the event changes or disappears while being edited, the draft stays visible with an error and cannot overwrite the newer data. Close and reopen the event to edit its current state. Changes to unrelated events or host-owned metadata do not block a save.
+- Recurring details display the clicked occurrence's time, with a clear recurring-event notice. Built-in Edit/Delete are intentionally unavailable for recurring events until an explicit series/occurrence editing workflow is supported; host APIs remain available.
+
+The standalone `EventForm` also supports `edit(event)` and `open(start, end)` for prefilled editing and creation ranges. Its cancellable `save` event carries editable fields; a host can call `preventDefault()` and `showError(message)` to retain a failed draft. Its `close` event reports `{ restoreFocus }`. The main calendar wires these to its state manager automatically.
+
 ## Read-only interaction mode
 
 Set the boolean HTML attribute `readonly`, or the reflected JavaScript property `readOnly`, to disable built-in user editing. The default is `false`.
@@ -72,9 +84,9 @@ calendar.readOnly = false; // Re-enable editing at any time
 
 Attribute spelling is `readonly` (no hyphen); property spelling is `readOnly`. Like native boolean attributes, `readonly="false"` still enables it: remove the attribute or assign `calendar.readOnly = false` to turn it off. Framework adapters, including LWC, should assign the boolean property before inserting the element and whenever their option changes.
 
-- Disables New Event, form creation/saves, event dragging, resizing and drag-to-create in month/week/day views. Resize handles are omitted and grids expose `aria-readonly`. The current built-in UI has no separate edit/delete dialog or context-menu action.
-- Keeps mouse/keyboard event and date selection, grid focus navigation, view switching and date navigation available.
-- Enabling it closes the current creation form, discards its unsaved edits, cancels an active drag/resize/creation gesture and releases the gesture's document listeners. Disabling it restores editing without duplicating listeners. Instances remain independent.
+- Disables New Event, form creation/saves, event dragging, resizing and drag-to-create in month/week/day views. Resize handles and details Edit/Delete actions are omitted and grids expose `aria-readonly`.
+- Keeps event details, mouse/keyboard event and date selection, grid focus navigation, view switching and date navigation available.
+- Enabling it closes the current details, deletion confirmation or event form, discards its unsaved edits, cancels an active drag/resize/creation gesture and releases the gesture's document listeners. Disabling it restores editing without duplicating listeners. Instances remain independent.
 - Host code can still call `setEvents()`, assign `events`, and call `addEvent()`, `updateEvent()` or `deleteEvent()`. Imperative CRUD retains its usual mutation notifications; snapshots still emit only `calendar-events-set`.
 
 This is a UI interaction option, **not a security or authorization boundary**. Host-provided editors/context menus must also honor the option, and applications must enforce permissions and validate all writes on the server.

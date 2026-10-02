@@ -154,3 +154,48 @@ describe('EventForm', () => {
     });
 
 });
+describe('EventForm editing validation and lifecycle', () => {
+    let form;
+    beforeEach(() => {
+        form = document.createElement('forcecal-event-form');
+        document.body.appendChild(form);
+    });
+    afterEach(() => form.remove());
+
+    test.each(['#event-start', '#event-end'])('rejects a missing or invalid %s without emitting save', selector => {
+        form.open(new Date(2026, 6, 15, 10));
+        form.titleInput.value = 'Valid title';
+        form.$(selector).value = '';
+        const saved = jest.fn();
+        form.addEventListener('save', saved);
+        form.save();
+        expect(saved).not.toHaveBeenCalled();
+        expect(form.$(selector).getAttribute('aria-invalid')).toBe('true');
+        expect(form.shadowRoot.activeElement).toBe(form.$(selector));
+        expect(form.hasAttribute('open')).toBe(true);
+    });
+
+    test('attribute opening before attachment and reattachment do not duplicate or preserve stale drafts', () => {
+        form.remove();
+        expect(() => form.setAttribute('open', '')).not.toThrow();
+        document.body.appendChild(form);
+        expect(form.hasAttribute('open')).toBe(true);
+        form.titleInput.value = 'Unsaved';
+        form.remove();
+        document.body.appendChild(form);
+        expect(form.hasAttribute('open')).toBe(false);
+        expect(form.titleInput.value).toBe('');
+    });
+
+    test('open reflects the attribute without recursive reset or duplicate close events', () => {
+        const open = jest.spyOn(form, 'open');
+        const close = jest.fn();
+        form.addEventListener('close', close);
+        form.open(new Date(2026, 6, 15, 10));
+        expect(open).toHaveBeenCalledTimes(1);
+        expect(form.startInput.value).toBe('2026-07-15T10:00');
+        form.close();
+        form.close();
+        expect(close).toHaveBeenCalledTimes(1);
+    });
+});

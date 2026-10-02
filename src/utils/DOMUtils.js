@@ -288,9 +288,38 @@ export class DOMUtils {
     return element.cloneNode(deep);
   }
 
-  /**
-   * Focus trap for modals/dialogs
-   */
+  /** Check return-focus targets across light DOM and shadow-host ancestors. */
+  static canRestoreFocus(element) {
+    if (
+      !element?.isConnected ||
+      typeof element.focus !== 'function' ||
+      element.matches(':disabled')
+    )
+      return false;
+    for (
+      let node = element;
+      node;
+      node = node.assignedSlot || node.parentElement || node.getRootNode().host
+    ) {
+      if (
+        node.hidden ||
+        node.inert ||
+        node.hasAttribute('inert') ||
+        node.getAttribute('aria-hidden') === 'true'
+      )
+        return false;
+      const style = node.ownerDocument.defaultView.getComputedStyle(node);
+      if (
+        style.display === 'none' ||
+        style.visibility === 'hidden' ||
+        style.visibility === 'collapse'
+      )
+        return false;
+    }
+    return true;
+  }
+
+  /** Focus trap for modals/dialogs. */
   static trapFocus(container) {
     const focusableElements = container.querySelectorAll(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
