@@ -1255,14 +1255,14 @@ export class ForceCalendar extends BaseComponent {
   }
 
   getTitle(date, view) {
-    const locale = this.stateManager.getState().config.locale;
+    const { locale, weekStartsOn } = this.stateManager.getState().config;
 
     switch (view) {
       case 'month':
         return DateUtils.formatDate(date, 'month', locale);
       case 'week': {
-        const weekStart = DateUtils.startOfWeek(date);
-        const weekEnd = DateUtils.endOfWeek(date);
+        const weekStart = DateUtils.startOfWeek(date, weekStartsOn);
+        const weekEnd = DateUtils.endOfWeek(date, weekStartsOn);
         return DateUtils.formatDateRange(weekStart, weekEnd, locale);
       }
       case 'day':
