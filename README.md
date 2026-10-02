@@ -22,7 +22,7 @@ import '@forcecalendar/interface'; // registers <forcecal-main> and <forcecal-ev
 <forcecal-main view="month" date="2026-04-15" week-starts-on="1" locale="en-AU"></forcecal-main>
 ```
 
-Attributes: `view` (`month` | `week` | `day`), `date`, `locale`, `timezone`, `week-starts-on`, `height`, `theme`. Views without a renderer fall back with a console warning.
+Attributes: `view` (`month` | `week` | `day`), `date`, `locale`, `timezone`, `week-starts-on`, `height`, `theme`, `readonly`. Views without a renderer fall back with a console warning.
 
 ## Loading events
 
@@ -53,6 +53,31 @@ Rules of the road:
 ### Recurring events
 
 Rendered chips of a recurring series carry occurrence ids (`<masterId>_<startMs>`). Clicking, selecting, dragging or resizing an occurrence resolves to the series master (`stateManager.findEvent(id)`), so `calendar-event-update` and the selection always carry the master event. There is no per-occurrence edit yet: dragging an occurrence shifts the whole series by the dragged delta (a change of date and time of day for every occurrence) and resizing one changes the duration of every occurrence.
+
+## Read-only interaction mode
+
+Set the boolean HTML attribute `readonly`, or the reflected JavaScript property `readOnly`, to disable built-in user editing. The default is `false`.
+
+```html
+<forcecal-main readonly view="week"></forcecal-main>
+```
+
+```js
+const calendar = document.createElement('forcecal-main');
+calendar.readOnly = true; // Can be set before registration/connection
+calendar.events = rows; // Snapshot hydration still works
+host.appendChild(calendar);
+calendar.readOnly = false; // Re-enable editing at any time
+```
+
+Attribute spelling is `readonly` (no hyphen); property spelling is `readOnly`. Like native boolean attributes, `readonly="false"` still enables it: remove the attribute or assign `calendar.readOnly = false` to turn it off. Framework adapters, including LWC, should assign the boolean property before inserting the element and whenever their option changes.
+
+- Disables New Event, form creation/saves, event dragging, resizing and drag-to-create in month/week/day views. Resize handles are omitted and grids expose `aria-readonly`. The current built-in UI has no separate edit/delete dialog or context-menu action.
+- Keeps mouse/keyboard event and date selection, grid focus navigation, view switching and date navigation available.
+- Enabling it closes the current creation form, discards its unsaved edits, cancels an active drag/resize/creation gesture and releases the gesture's document listeners. Disabling it restores editing without duplicating listeners. Instances remain independent.
+- Host code can still call `setEvents()`, assign `events`, and call `addEvent()`, `updateEvent()` or `deleteEvent()`. Imperative CRUD retains its usual mutation notifications; snapshots still emit only `calendar-events-set`.
+
+This is a UI interaction option, **not a security or authorization boundary**. Host-provided editors/context menus must also honor the option, and applications must enforce permissions and validate all writes on the server.
 
 ## Visible range
 

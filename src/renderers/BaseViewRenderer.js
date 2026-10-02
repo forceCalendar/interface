@@ -21,6 +21,8 @@ export class BaseViewRenderer {
     this._listeners = [];
     this._scrolled = false;
     this._nowIndicatorTimer = null;
+    /** @type {import('../core/DragController.js').DragController|null} */
+    this._dragController = null;
   }
 
   /**
@@ -35,6 +37,8 @@ export class BaseViewRenderer {
    * Clean up event listeners
    */
   cleanup() {
+    this._dragController?.destroy();
+    this._dragController = null;
     this._listeners.forEach(({ element, event, handler }) => {
       element.removeEventListener(event, handler);
     });
@@ -43,6 +47,11 @@ export class BaseViewRenderer {
       clearInterval(this._nowIndicatorTimer);
       this._nowIndicatorTimer = null;
     }
+  }
+
+  /** Whether user-driven event mutations are disabled for this instance. */
+  get readOnly() {
+    return Boolean(this.stateManager.getState().config.readOnly);
   }
 
   /**
@@ -346,6 +355,7 @@ export class BaseViewRenderer {
     const grid = this.container.querySelector('.fc-time-grid');
     if (!grid) return;
     grid.setAttribute('role', 'grid');
+    grid.setAttribute('aria-readonly', String(this.readOnly));
     grid.setAttribute('aria-label', gridLabel);
     const gutter = this.container.querySelector('.fc-time-gutter');
     if (gutter) gutter.setAttribute('aria-hidden', 'true');

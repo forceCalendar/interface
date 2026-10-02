@@ -199,7 +199,10 @@ export class WeekViewRenderer extends BaseViewRenderer {
     this._enhanceTimeGridAccessibility('.fc-week-day-column', label);
 
     // Drag to move/resize events and drag empty grid to create
-    new DragController(this).enableTimeGrid('.fc-week-day-column');
+    if (!this.readOnly) {
+      this._dragController = new DragController(this);
+      this._dragController.enableTimeGrid('.fc-week-day-column');
+    }
   }
 
   _scrollToCurrentTime() {

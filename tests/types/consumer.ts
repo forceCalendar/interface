@@ -22,3 +22,9 @@ DateUtils.formatTime(new Date(), 'en-GB', true);
 new BaseViewRenderer(document.createElement('div'), new StateManager());
 void base;
 void dates;
+
+element.readOnly = true;
+const readOnly: boolean = element.readOnly;
+const classReadOnly: boolean = new ForceCalendar().readOnly;
+void readOnly;
+void classReadOnly;

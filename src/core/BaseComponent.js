@@ -208,13 +208,17 @@ export class BaseComponent extends HTMLElement {
   _getActiveElementSelector() {
     const active = this.shadowRoot.activeElement;
     if (!active || active === this._contentWrapper) return null;
-    if (active.id) return `[id="${CSS.escape(active.id)}"]`;
+    const escapeValue =
+      typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+        ? CSS.escape
+        : value => String(value).replace(/["\\]/g, '\\$&');
+    if (active.id) return `[id="${escapeValue(active.id)}"]`;
     // Prefer data attributes over className to avoid invalid selectors
     if (active.dataset && active.dataset.action) {
-      return `[data-action="${CSS.escape(active.dataset.action)}"]`;
+      return `[data-action="${escapeValue(active.dataset.action)}"]`;
     }
     if (active.dataset && active.dataset.view) {
-      return `[data-view="${CSS.escape(active.dataset.view)}"]`;
+      return `[data-view="${escapeValue(active.dataset.view)}"]`;
     }
     if (active.tagName) {
       return active.tagName.toLowerCase();
