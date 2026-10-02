@@ -24,6 +24,11 @@ new BaseViewRenderer(document.createElement('div'), new StateManager());
 void base;
 void dates;
 
+element.showColorPicker = false;
+const showColorPicker: boolean = element.showColorPicker;
+const classShowColorPicker: boolean = new ForceCalendar().showColorPicker;
+void showColorPicker;
+void classShowColorPicker;
 element.readOnly = true;
 const readOnly: boolean = element.readOnly;
 const classReadOnly: boolean = new ForceCalendar().readOnly;

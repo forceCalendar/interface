@@ -27,7 +27,28 @@ export class ForceCalendar extends BaseComponent {
   };
 
   static get observedAttributes() {
-    return ['view', 'date', 'locale', 'timezone', 'week-starts-on', 'height', 'theme', 'readonly'];
+    return [
+      'view',
+      'date',
+      'locale',
+      'timezone',
+      'week-starts-on',
+      'height',
+      'theme',
+      'readonly',
+      'show-color-picker'
+    ];
+  }
+
+  /** Update this presentational option without replacing an open editor. */
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (name === 'show-color-picker') {
+      this.setProp(name, newValue);
+      const form = this.$('#event-modal');
+      if (form) form.showColorPicker = this.showColorPicker;
+      return;
+    }
+    super.attributeChangedCallback(name, oldValue, newValue);
   }
 
   /**
@@ -120,6 +141,7 @@ export class ForceCalendar extends BaseComponent {
   initialize() {
     // Frameworks may set the property before customElements.define().
     this._upgradeProperty('readOnly');
+    this._upgradeProperty('showColorPicker');
 
     // Initialize state manager with config from attributes
     const config = {
@@ -990,7 +1012,7 @@ export class ForceCalendar extends BaseComponent {
                 </div>
                 
                 <div id="event-details" class="fc-details-overlay" hidden></div>
-                <forcecal-event-form id="event-modal"></forcecal-event-form>
+                <forcecal-event-form id="event-modal" show-color-picker="${this.showColorPicker}"></forcecal-event-form>
             </div>
         `;
   }
@@ -1280,6 +1302,16 @@ export class ForceCalendar extends BaseComponent {
    * present value is true. This is a UI option, not an authorization boundary.
    * @returns {boolean}
    */
+  /** Whether the built-in event editor offers color selection. Defaults to true. */
+  get showColorPicker() {
+    return this.getAttribute('show-color-picker')?.trim().toLowerCase() !== 'false';
+  }
+
+  /** @param {boolean} value */
+  set showColorPicker(value) {
+    this.setAttribute('show-color-picker', String(Boolean(value)));
+  }
+
   get readOnly() {
     return this.hasAttribute('readonly');
   }

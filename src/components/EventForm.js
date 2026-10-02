@@ -42,10 +42,32 @@ export class EventForm extends BaseComponent {
   }
 
   static get observedAttributes() {
-    return ['open'];
+    return ['open', 'show-color-picker'];
+  }
+
+  get showColorPicker() {
+    return this.getAttribute('show-color-picker')?.trim().toLowerCase() !== 'false';
+  }
+
+  /** @param {boolean} value */
+  set showColorPicker(value) {
+    this.setAttribute('show-color-picker', String(Boolean(value)));
+  }
+
+  _updateColorPickerVisibility() {
+    const group = this.$('#color-group');
+    if (!group) return;
+    group.hidden = !this.showColorPicker;
+    group.querySelectorAll('button').forEach(button => {
+      button.disabled = !this.showColorPicker;
+    });
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
+    if (name === 'show-color-picker') {
+      this._updateColorPickerVisibility();
+      return;
+    }
     if (name === 'open' && oldValue !== newValue && !this._reflectingOpen) {
       if (newValue !== null) {
         this.open();
@@ -132,6 +154,8 @@ export class EventForm extends BaseComponent {
                 flex-direction: column;
                 gap: var(--fc-spacing-md);
             }
+
+            .form-group[hidden] { display: none; }
 
             .form-group {
                 min-width: 0;
@@ -280,7 +304,7 @@ export class EventForm extends BaseComponent {
                         </div>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group" id="color-group">
                         <label id="color-label">Color</label>
                         <div class="color-options" id="color-picker" role="radiogroup" aria-labelledby="color-label">
                             ${this.config.colors
@@ -318,6 +342,7 @@ export class EventForm extends BaseComponent {
     this.startInput = this.$('#event-start');
     this.endInput = this.$('#event-end');
     this.colorContainer = this.$('#color-picker');
+    this._updateColorPickerVisibility();
 
     this.titleGroup = this.$('#title-group');
     this.startGroup = this.$('#start-group');
@@ -330,6 +355,7 @@ export class EventForm extends BaseComponent {
 
     this.colorContainer.querySelectorAll('.color-btn').forEach(btn => {
       this.addListener(btn, 'click', e => {
+        if (!this.showColorPicker) return;
         this._formData.color = e.currentTarget.dataset.color;
         this._colorChanged = true;
         this.updateColorSelection();

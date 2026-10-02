@@ -66,6 +66,15 @@ Click an event, or focus it and press Enter/Space, to open its details: title, t
 
 The standalone `EventForm` also supports `edit(event)` and `open(start, end)` for prefilled editing and creation ranges. Its cancellable `save` event carries editable fields; a host can call `preventDefault()` and `showError(message)` to retain a failed draft. Its `close` event reports `{ restoreFocus }`. The main calendar wires these to its state manager automatically.
 
+## Optional editor color control
+
+The color picker remains visible by default. Hosts that cannot persist colors can use
+`<forcecal-main show-color-picker="false">` or `calendar.showColorPicker = false`.
+The explicit attribute value `false` hides it; `true`, an empty attribute, or removing
+the attribute shows it. Changing this option while editing keeps the unsaved draft.
+Hidden controls do not reset existing event colors. Standalone `EventForm` supports
+the same attribute and property.
+
 ## Read-only interaction mode
 
 Set the boolean HTML attribute `readonly`, or the reflected JavaScript property `readOnly`, to disable built-in user editing. The default is `false`.
