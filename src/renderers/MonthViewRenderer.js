@@ -57,7 +57,7 @@ export class MonthViewRenderer extends BaseViewRenderer {
     );
 
     let html = `
-            <div class="fc-month-view" role="grid" aria-label="${this.escapeHTML(gridLabel)}" style="display: flex; flex-direction: column; height: 100%; min-height: 400px; background: var(--fc-background); border: 1px solid var(--fc-border-color);">
+            <div class="fc-month-view" role="grid" aria-readonly="${this.readOnly}" aria-label="${this.escapeHTML(gridLabel)}" style="display: flex; flex-direction: column; height: 100%; min-height: 400px; background: var(--fc-background); border: 1px solid var(--fc-border-color);">
                 <div class="fc-month-header" role="row" style="display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid var(--fc-border-color); background: var(--fc-background-alt);">
                     ${dayNames.map(d => `<div class="fc-month-header-cell" role="columnheader" style="padding: 12px 8px; text-align: center; font-size: 11px; font-weight: 600; color: var(--fc-text-light); text-transform: uppercase;">${this.escapeHTML(d)}</div>`).join('')}
                 </div>
@@ -231,7 +231,10 @@ export class MonthViewRenderer extends BaseViewRenderer {
     this.attachCommonEventHandlers();
 
     // Drag an event chip onto another day to move it
-    new DragController(this).enableMonthMove();
+    if (!this.readOnly) {
+      this._dragController = new DragController(this);
+      this._dragController.enableMonthMove();
+    }
   }
 
   /**

@@ -37,10 +37,19 @@ export class DateUtils extends CoreDateUtils {
   }
 
   /**
-   * Format time for display
+   * Format time for display. A locale string in the second position also
+   * supports the inherited Core DateUtils signature.
+   * @param {Date} date
+   * @param {boolean|string} [showMinutes=true] - Show minutes, or a Core-style locale
+   * @param {boolean} [use24Hour=false]
+   * @param {string} [locale='en-US']
+   * @returns {string}
    */
   static formatTime(date, showMinutes = true, use24Hour = false, locale = 'en-US') {
     if (!date) return '';
+    if (typeof showMinutes === 'string') {
+      return CoreDateUtils.formatTime(date, showMinutes, use24Hour);
+    }
 
     const options = {
       hour: 'numeric',

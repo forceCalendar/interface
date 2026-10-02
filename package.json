@@ -28,9 +28,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "jest --testTimeout=10000",
+    "test": "npm run test:types && jest --testTimeout=10000",
     "build:types": "tsc -p tsconfig.types.json && node -e \"import('node:fs').then(fs => fs.cpSync('src/types', 'types/types', { recursive: true }))\"",
-    "prepublishOnly": "npm run build && npm run build:types"
+    "prepublishOnly": "npm run build && npm run build:types",
+    "test:types": "npm run build:types && tsc -p tests/types/tsconfig.json"
   },
   "repository": {
     "type": "git",
@@ -58,7 +59,7 @@
   "devDependencies": {
     "@babel/core": "^7.28.5",
     "@babel/preset-env": "^7.28.5",
-    "@forcecalendar/core": "^2.5.1",
+    "@forcecalendar/core": "^2.5.4",
     "babel-jest": "^30.2.0",
     "eslint": "^8.57.1",
     "jest": "^30.2.0",

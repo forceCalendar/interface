@@ -94,6 +94,9 @@ export interface ForceCalendarEventMap {
 
 /** Public surface of the `<forcecal-main>` element. */
 export interface ForceCalendarElement extends HTMLElement {
+  /** Disable built-in user edits. Reflected boolean `readonly` attribute; host APIs remain writable. */
+  readOnly: boolean;
+
   /**
    * Complete snapshot of events; assigning reconciles with
    * `removeMissing: true`. Reading returns the events the calendar holds (or

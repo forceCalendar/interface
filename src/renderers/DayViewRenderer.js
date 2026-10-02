@@ -224,7 +224,10 @@ export class DayViewRenderer extends BaseViewRenderer {
     this._enhanceTimeGridAccessibility('.fc-day-column', label);
 
     // Drag to move/resize events and drag empty grid to create
-    new DragController(this).enableTimeGrid('.fc-day-column');
+    if (!this.readOnly) {
+      this._dragController = new DragController(this);
+      this._dragController.enableTimeGrid('.fc-day-column');
+    }
   }
 
   _scrollToCurrentTime() {

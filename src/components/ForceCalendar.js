@@ -26,7 +26,7 @@ export class ForceCalendar extends BaseComponent {
   };
 
   static get observedAttributes() {
-    return ['view', 'date', 'locale', 'timezone', 'week-starts-on', 'height', 'theme'];
+    return ['view', 'date', 'locale', 'timezone', 'week-starts-on', 'height', 'theme', 'readonly'];
   }
 
   /**
@@ -87,6 +87,11 @@ export class ForceCalendar extends BaseComponent {
     if (!this._isInitialised() || oldValue === newValue) return;
 
     switch (name) {
+      case 'readonly':
+        // Close the editor before replacing its DOM and release its focus trap.
+        if (this.readOnly) this.$('#event-modal')?.close();
+        this.stateManager.updateConfig({ readOnly: this.readOnly });
+        break;
       case 'view':
         if (newValue) {
           this.stateManager.setView(this._resolveView(newValue, this.stateManager.getView()));
@@ -112,13 +117,17 @@ export class ForceCalendar extends BaseComponent {
   }
 
   initialize() {
+    // Frameworks may set the property before customElements.define().
+    this._upgradeProperty('readOnly');
+
     // Initialize state manager with config from attributes
     const config = {
       view: this._resolveView(this.getAttribute('view')),
       date: this.getAttribute('date') ? new Date(this.getAttribute('date')) : new Date(),
       locale: this.getAttribute('locale') || 'en-US',
       timeZone: this.getAttribute('timezone') || Intl.DateTimeFormat().resolvedOptions().timeZone,
-      weekStartsOn: parseInt(this.getAttribute('week-starts-on') || '0')
+      weekStartsOn: parseInt(this.getAttribute('week-starts-on') || '0'),
+      readOnly: this.readOnly
     };
 
     this.stateManager = new StateManager(config);
@@ -501,7 +510,7 @@ export class ForceCalendar extends BaseComponent {
                 outline-offset: -2px;
             }
 
-            .fc-event { touch-action: none; }
+            .fc-event { touch-action: ${this.readOnly ? 'auto' : 'none'}; }
 
             .fc-dragging {
                 opacity: 0.6;
@@ -861,7 +870,7 @@ export class ForceCalendar extends BaseComponent {
                     </div>
 
                     <div class="fc-header-right">
-                        <button class="fc-btn fc-btn-primary" id="create-event-btn" style="height: 28px; padding: 0 12px; font-size: 12px;">
+                        <button class="fc-btn fc-btn-primary" id="create-event-btn" ${this.readOnly ? 'disabled' : ''} style="height: 28px; padding: 0 12px; font-size: 12px;">
                             + New Event
                         </button>
                         <div class="fc-view-buttons" role="group" aria-label="Calendar view">
@@ -972,21 +981,23 @@ export class ForceCalendar extends BaseComponent {
 
     if (createBtn && modal) {
       this.addListener(createBtn, 'click', () => {
-        modal.open(new Date());
+        if (!this.readOnly) modal.open(new Date());
       });
     }
 
     // Listen for day clicks from the view
     this.addListener(this.shadowRoot, 'day-click', e => {
-      if (modal) {
+      if (modal && !this.readOnly) {
         modal.open(e.detail.date);
       }
     });
 
     // Drag-to-create emits a range: surface it and open the form prefilled
     this.addListener(this.shadowRoot, 'range-select', e => {
+      if (this.readOnly) return;
       this.emit('calendar-range-select', e.detail);
-      if (modal) {
+      // A host listener may have toggled readOnly or replaced the view.
+      if (modal?.isConnected && !this.readOnly) {
         modal.open(e.detail.start);
       }
     });
@@ -994,6 +1005,7 @@ export class ForceCalendar extends BaseComponent {
     // Handle event saving
     if (modal) {
       this.addListener(modal, 'save', e => {
+        if (this.readOnly || !this._isInitialised()) return;
         const eventData = e.detail;
         // Robust Safari support check for randomUUID
         const id =
@@ -1101,20 +1113,36 @@ export class ForceCalendar extends BaseComponent {
   }
 
   // Public API methods
+
+  /**
+   * Disable user-driven event changes, leaving navigation, selection and host
+   * data APIs available. Reflects the boolean HTML attribute `readonly`: any
+   * present value is true. This is a UI option, not an authorization boundary.
+   * @returns {boolean}
+   */
+  get readOnly() {
+    return this.hasAttribute('readonly');
+  }
+
+  /** @param {boolean} value */
+  set readOnly(value) {
+    this.toggleAttribute('readonly', Boolean(value));
+  }
+
   addEvent(event) {
-    return this.stateManager.addEvent(event);
+    return this._isInitialised() ? this.stateManager.addEvent(event) : null;
   }
 
   updateEvent(eventId, updates) {
-    return this.stateManager.updateEvent(eventId, updates);
+    return this._isInitialised() ? this.stateManager.updateEvent(eventId, updates) : null;
   }
 
   deleteEvent(eventId) {
-    return this.stateManager.deleteEvent(eventId);
+    return this._isInitialised() ? this.stateManager.deleteEvent(eventId) : false;
   }
 
   getEvents() {
-    return this.stateManager.getEvents();
+    return this.events;
   }
 
   /**
@@ -1185,22 +1213,27 @@ export class ForceCalendar extends BaseComponent {
   }
 
   setView(view) {
+    if (!this._isInitialised()) return;
     this.stateManager.setView(this._resolveView(view, this.stateManager.getView()));
   }
 
   setDate(date) {
+    if (!this._isInitialised()) return;
     this.stateManager.setDate(date);
   }
 
   next() {
+    if (!this._isInitialised()) return;
     this.stateManager.next();
   }
 
   previous() {
+    if (!this._isInitialised()) return;
     this.stateManager.previous();
   }
 
   today() {
+    if (!this._isInitialised()) return;
     this.stateManager.today();
   }
 

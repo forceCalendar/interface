@@ -22,7 +22,7 @@ import '@forcecalendar/interface'; // registers <forcecal-main> and <forcecal-ev
 <forcecal-main view="month" date="2026-04-15" week-starts-on="1" locale="en-AU"></forcecal-main>
 ```
 
-Attributes: `view` (`month` | `week` | `day`), `date`, `locale`, `timezone`, `week-starts-on`, `height`, `theme`. Views without a renderer fall back with a console warning.
+Attributes: `view` (`month` | `week` | `day`), `date`, `locale`, `timezone`, `week-starts-on`, `height`, `theme`, `readonly`. Views without a renderer fall back with a console warning.
 
 ## Loading events
 
@@ -54,6 +54,31 @@ Rules of the road:
 
 Rendered chips of a recurring series carry occurrence ids (`<masterId>_<startMs>`). Clicking, selecting, dragging or resizing an occurrence resolves to the series master (`stateManager.findEvent(id)`), so `calendar-event-update` and the selection always carry the master event. There is no per-occurrence edit yet: dragging an occurrence shifts the whole series by the dragged delta (a change of date and time of day for every occurrence) and resizing one changes the duration of every occurrence.
 
+## Read-only interaction mode
+
+Set the boolean HTML attribute `readonly`, or the reflected JavaScript property `readOnly`, to disable built-in user editing. The default is `false`.
+
+```html
+<forcecal-main readonly view="week"></forcecal-main>
+```
+
+```js
+const calendar = document.createElement('forcecal-main');
+calendar.readOnly = true; // Can be set before registration/connection
+calendar.events = rows; // Snapshot hydration still works
+host.appendChild(calendar);
+calendar.readOnly = false; // Re-enable editing at any time
+```
+
+Attribute spelling is `readonly` (no hyphen); property spelling is `readOnly`. Like native boolean attributes, `readonly="false"` still enables it: remove the attribute or assign `calendar.readOnly = false` to turn it off. Framework adapters, including LWC, should assign the boolean property before inserting the element and whenever their option changes.
+
+- Disables New Event, form creation/saves, event dragging, resizing and drag-to-create in month/week/day views. Resize handles are omitted and grids expose `aria-readonly`. The current built-in UI has no separate edit/delete dialog or context-menu action.
+- Keeps mouse/keyboard event and date selection, grid focus navigation, view switching and date navigation available.
+- Enabling it closes the current creation form, discards its unsaved edits, cancels an active drag/resize/creation gesture and releases the gesture's document listeners. Disabling it restores editing without duplicating listeners. Instances remain independent.
+- Host code can still call `setEvents()`, assign `events`, and call `addEvent()`, `updateEvent()` or `deleteEvent()`. Imperative CRUD retains its usual mutation notifications; snapshots still emit only `calendar-events-set`.
+
+This is a UI interaction option, **not a security or authorization boundary**. Host-provided editors/context menus must also honor the option, and applications must enforce permissions and validate all writes on the server.
+
 ## Visible range
 
 `getVisibleRange()` returns the `{ start, end }` window the current view covers, including the leading and trailing other-month days of the month grid. `end` is inclusive (the last millisecond of the window), so the pair can be passed straight to a range query. The window is expressed in the browser's local time zone regardless of the `timezone` attribute, and it is computed from the date, view and week start alone, so it is cheap to call.
@@ -68,9 +93,9 @@ calendar.addEventListener('calendar-range-change', async e => {
 
 ## Lifecycle: detach and destroy
 
-Removing the element from the document releases its rendered tree, DOM listeners and timers but keeps its state (view, date, events) and keeps dispatching `calendar-*` events for API calls, so a re-attach (framework reconciliation, portals, StrictMode double-mount) picks up where it left off. Attribute changes made while detached are applied to state and rendered on the next attach.
+Removing the element from the document releases its rendered tree, DOM listeners and view timers but keeps its state (view, date, events) and keeps dispatching `calendar-*` events for API calls, so a re-attach (framework reconciliation, portals, StrictMode double-mount) picks up where it left off. Attribute changes made while detached are applied to state and rendered on the next attach.
 
-`destroy()` tears the state manager down. Afterwards the public API no-ops or queues instead of throwing (`events` is `[]`, `getVisibleRange()` is `null`, `setEvents()` queues) and the next attach initialises a fresh calendar from the attributes and any queued snapshot.
+`destroy()` tears the state manager and its owned Core Calendar down, including background maintenance timers (use Core 2.5.4 or later for full timer cleanup). Call it when you are finished with an element permanently; detaching alone intentionally preserves the calendar. Repeated calls are safe. Afterwards the public API no-ops or queues instead of throwing (`events` and `getEvents()` read the queued snapshot, `getVisibleRange()` is `null`, `setEvents()` queues, CRUD mutations return `null`/`false`, and navigation no-ops) and the next attach initialises a fresh calendar from the attributes and any queued snapshot.
 
 ## Events
 

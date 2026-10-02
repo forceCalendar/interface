@@ -45,12 +45,15 @@ export class DragController {
     this.stateManager = renderer.stateManager;
     this._active = null;
     this._docListeners = [];
+    this._clickCleanup = null;
+    this._destroyed = false;
   }
 
   /** Month view: drag an event chip onto another day cell. */
   enableMonthMove() {
+    if (this._destroyed || this.renderer.readOnly) return;
     this.renderer.addListener(this.container, 'pointerdown', e => {
-      if (e.button !== 0) return;
+      if (e.button !== 0 || this._destroyed || this.renderer.readOnly) return;
       const eventEl = e.target.closest('.fc-event');
       if (!eventEl || !this.container.contains(eventEl)) return;
       const originCell = eventEl.closest('.fc-month-day');
@@ -71,11 +74,12 @@ export class DragController {
    * drag the bottom handle to resize, drag empty grid to create.
    */
   enableTimeGrid(columnSelector) {
+    if (this._destroyed || this.renderer.readOnly) return;
     this._columnSelector = columnSelector;
     this._injectResizeHandles();
 
     this.renderer.addListener(this.container, 'pointerdown', e => {
-      if (e.button !== 0) return;
+      if (e.button !== 0 || this._destroyed || this.renderer.readOnly) return;
 
       const handle = e.target.closest('.fc-resize-handle');
       if (handle) {
@@ -122,6 +126,8 @@ export class DragController {
 
   /** Track from pointerdown; promote to a drag past the threshold. */
   _arm(e, spec) {
+    if (this._destroyed || this.renderer.readOnly) return;
+    this._cancel();
     this._active = {
       ...spec,
       startX: e.clientX,
@@ -148,6 +154,10 @@ export class DragController {
   }
 
   _onPointerMove(e) {
+    if (this._destroyed || this.renderer.readOnly) {
+      this._cancel();
+      return;
+    }
     const a = this._active;
     if (!a) return;
     if (!a.dragging) {
@@ -167,29 +177,62 @@ export class DragController {
   }
 
   _onPointerUp(e) {
+    if (this._destroyed || this.renderer.readOnly) {
+      this._cancel();
+      return;
+    }
     const a = this._active;
     this._teardownDocListeners();
     if (!a) return;
     if (a.dragging) {
-      // Swallow the click that follows a drag so it doesn't select/open
-      const doc = this.container.ownerDocument;
-      const swallow = ev => {
-        ev.stopPropagation();
-        ev.preventDefault();
-      };
-      doc.addEventListener('click', swallow, { capture: true, once: true });
-      setTimeout(() => doc.removeEventListener('click', swallow, { capture: true }), 0);
       a.onDrop(e);
+      // A successful update may synchronously render a new controller. Give
+      // that live owner the trailing-click guard so its next cleanup can
+      // release it (including a readOnly toggle or detach).
+      const controller = this._destroyed ? this.renderer._dragController : this;
+      controller?._suppressNextClick();
     }
     this._cleanupVisuals(a);
     this._active = null;
+  }
+
+  _suppressNextClick() {
+    if (this._destroyed || this.renderer.readOnly) return;
+    const doc = this.container.ownerDocument;
+    this._clickCleanup?.();
+    const swallow = ev => {
+      // Do not consume a click intended for another calendar instance.
+      if (!ev.composedPath().includes(this.container)) return;
+      ev.stopPropagation();
+      ev.preventDefault();
+      this._clickCleanup?.();
+    };
+    doc.addEventListener('click', swallow, { capture: true });
+    const timer = setTimeout(() => this._clickCleanup?.(), 0);
+    this._clickCleanup = () => {
+      doc.removeEventListener('click', swallow, { capture: true });
+      clearTimeout(timer);
+      this._clickCleanup = null;
+    };
   }
 
   _cancel() {
     const a = this._active;
     this._teardownDocListeners();
     this._active = null;
-    if (a) this._cleanupVisuals(a);
+    if (a) {
+      if (a.mode === 'resize' && a.eventEl) {
+        a.eventEl.style.height = `${a.originHeight}px`;
+      }
+      this._cleanupVisuals(a);
+    }
+  }
+
+  /** Cancel active interactions and release all document-level listeners. */
+  destroy() {
+    this._destroyed = true;
+    this._cancel();
+    this._clickCleanup?.();
   }
 
   _teardownDocListeners() {
